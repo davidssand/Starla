@@ -1,0 +1,4 @@
+Comandos uteis:
+
+dmesg | grep tty - lista dispositivos comunicação serial conectados
+i2cdetect -y 1 -  lista dispositivos comunicação I2C conectados
