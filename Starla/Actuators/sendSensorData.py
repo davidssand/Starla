@@ -4,9 +4,9 @@ import serial
 #from .oi import Oi
 
 import sys
-sys.path.append("/home/pi/Components")
-from MPU6050.MPU6050_Readings import MPU6050
-from BME280.BME280_Readings import BME280
+sys.path.append("/home/pi/Starla")
+from Sensors.MPU6050 import MPU6050
+from Sensors.BME280 import BME280
 
 ser = serial.Serial(
                port="/dev/ttyAMA0",

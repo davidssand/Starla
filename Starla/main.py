@@ -10,11 +10,11 @@ import time
 import serial
 import sys
 
-sys.path.append("/home/pi/Components")
-from States.States import WaitingIgnition
-from Thread import Thread
-from transmitter.Transmitter import Transmitter
-from Rocket.Rocket import Rocket
+sys.path.append("/home/pi/Starla")
+from Managers.States import WaitingIgnition
+from Managers.Thread import Thread
+from Actuators.transmitter.Transmitter import Transmitter
+from Managers.Rocket import Rocket
 
 transmitter = Transmitter()
 

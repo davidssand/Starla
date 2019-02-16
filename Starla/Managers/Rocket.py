@@ -1,7 +1,7 @@
 import sys
 
-sys.path.append("/home/pi/Components")
-from States.States import WaitingIgnition
+sys.path.append("/home/pi/Starla")
+from Managers.States import WaitingIgnition
 
 class Rocket:
     """

@@ -7,13 +7,13 @@ Created on Thu Jan 29 21:03:57 2019
 """
 import sys
 
-sys.path.append("/home/pi/Components")
+sys.path.append("/home/pi/Starla")
 
-from MPU6050.MPU6050 import MPU6050
-from BME280.BME280 import BME280
-from Transmitter.Transmitter import Transmitter
-from Camera.Camera import Camera
-from Parachute import Parachute
+from Sensors.MPU6050 import MPU6050
+from Sensors.BME280 import BME280
+from Actuators.Transmitter import Transmitter
+from Actuators.Camera import Camera
+from Actuators.Parachute import Parachute
 
 mpu6050 = MPU6050()
 bme280 = BME280()
