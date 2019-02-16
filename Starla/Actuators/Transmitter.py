@@ -14,7 +14,7 @@ class Transmitter:
     def __init__(self):
         self.ser = serial.Serial(
                        port="/dev/ttyAMA0",
-                       baudrate = 9600,
+                       baudrate=9600,
                        parity=serial.PARITY_NONE,
                        stopbits=serial.STOPBITS_ONE,
                        bytesize=serial.EIGHTBITS,
@@ -34,7 +34,7 @@ class Transmitter:
                 c = ","
             msg += "#"
             self.ser.write(msg)
-            print msg+"\n"
+            print(msg + "\n")
             msg = ""
             time.sleep(delay)
 
