@@ -1,0 +1,31 @@
+Transmissor:
+	M0 e M1 = 0 -> Trasmissao
+	M0 e M1 = 1 -> Configuracao
+	3.3V
+	Antena menor -> transmite
+	Antena maior -> recebe
+
+	O arduino apresentou baixa taxa de amostragem de dados recebidos, processamento foi essencial
+	Sem processamento de dados, taxa m�nima de amostragem era de ~ 2s
+	Com processamento, taxa m�nima atingiu 0.2s
+
+	Raspberry Pi Zero W transmissor - Arduino Uno receptor:
+		Ativar UART communication no raspberry
+		Conexoes:
+			Raspberry Pi Zero:
+				RX -> Tx
+				Tx -> Rx
+			Arduino Uno:
+				Rx -> Rx
+				Tx -> Tx
+		Comunicacao:
+			Inicio de mensagem -> "$"
+			Termino de mensagem -> "#"
+			Separacao entre pacotes -> "!"
+	Usar o Arduino Uno como receptor sempre
+
+	Para comunicar Raspberry Pi Zero W com arduino:
+		Rx -> Rx
+		Tx -> Tx
+	
+	

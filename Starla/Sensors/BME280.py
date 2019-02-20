@@ -25,7 +25,6 @@ class BME280:
         self.pressure = 0
         self.humidity = 0
         self.hight = 0
-        self.hight2 = 0
         self.chip_id = 0
         self.chip_version = 0
 
@@ -161,14 +160,13 @@ class BME280:
         elif humidity < 0:
             humidity = 0
 
-        hight = (1 - (pressure / 101325) ** (1 / 5.25588)) * (1 / (2.25577 * 10 ** (-5)))
-        hight2 = ((1013.25/(pressure/100))**(1/5.257)-1)*(temperature/100+273.15)/0.0065
+        hight = ((1013.25/(pressure/100))**(1/5.257)-1)*(temperature/100+273.15)/0.0065
 
-        return temperature / 100.0, pressure / 100.0, humidity, hight, hight2    
+        return temperature / 100.0, pressure / 100.0, humidity, hight    
 
     def readData(self):
         (self.chip_id, self.chip_version) = self.readBME280ID()
-        self.temperature, self.pressure, self.humidity, self.hight, self.hight2 = self.readBME280All()    
+        self.temperature, self.pressure, self.humidity, self.hight = self.readBME280All()    
 
     def showData(self):
         self.readData()
@@ -180,12 +178,11 @@ class BME280:
         print("Pressure : ", self.pressure, "hPa")
         print("Humidity : ", self.humidity, "%")
         print("Hight : ", self.hight, "m")
-        print("Hight2 : ", self.hight2, "m")
     
 
     def dataPackage(self):
         self.readData()
-        self.temperature, self.pressure, self.humidity, self.hight, self.hight2 = self.readBME280All()
-        data = [round(self.temperature, 1), round(self.pressure, 1), round(self.hight2, 1)]
+        self.temperature, self.pressure, self.humidity, self.hight = self.readBME280All()
+        data = [round(self.temperature, 1), round(self.pressure, 1), round(self.hight, 1)]
         return data
 

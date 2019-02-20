@@ -13,7 +13,7 @@ import sys
 sys.path.append("/home/pi/Starla")
 from Managers.States import WaitingIgnition
 from Managers.Thread import Thread
-from Actuators.transmitter.Transmitter import Transmitter
+from Actuators.Transmitter import Transmitter
 from Managers.Rocket import Rocket
 
 transmitter = Transmitter()
