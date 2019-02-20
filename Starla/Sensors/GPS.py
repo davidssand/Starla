@@ -14,7 +14,7 @@ MODE_2D = 2
 MODE_3D = 3
 
 
-class Gps:
+class GPS:
     """
     Esta classe é o conjunto de funções relaciodas a aquisição de dados do GPS
     Para utiliza-la, basta criar o objeto GPS e de tempos em tempos, chamar
