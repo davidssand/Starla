@@ -1,0 +1,20 @@
+# How to use GPS
+Discover UART por name, mine was ttyAMA0
+sudo apt-get install gpsd gpsd-clients
+sudo gpsd /dev/ttyAMA0 -F /var/run/gpsd.sock
+
+# Should print a big list, containing information sometimes
+cat /dev/ttyAMA0
+
+# Go to
+/etc/default/gps
+# Make
+DEVICES=”/dev/ttyAMA0"
+sudo systemctl restart gpsd
+
+# Do
+cgps
+# Should print table with data
+# If time is showing, it works
+# May take time for data to show
+# Change location if data not showing
