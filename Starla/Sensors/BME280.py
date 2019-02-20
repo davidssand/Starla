@@ -12,6 +12,10 @@ import time
 from ctypes import c_short
 from ctypes import c_byte
 from ctypes import c_ubyte
+import sys
+
+sys.path.append("/home/pi/Starla")
+from Sensors.Sensor import Sensor
 
 DEVICE = 0x76  # Default device I2C address
 
@@ -19,8 +23,10 @@ bus = smbus.SMBus(1)  # Rev 2 Pi, Pi 2 & Pi 3 uses bus 1
 
 # Rev 1 Pi uses bus 0
 
-class BME280:
+class BME280(Sensor):
     def __init__(self):
+        super().__init__()
+
         self.temperature = 0
         self.pressure = 0
         self.humidity = 0
@@ -170,6 +176,9 @@ class BME280:
 
     def showData(self):
         self.readData()
+
+        print("BME280")
+        print("----------------")
 
         print("Chip ID     :", self.chip_id)
         print("Version     :", self.chip_version)

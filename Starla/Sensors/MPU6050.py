@@ -1,6 +1,10 @@
 #!/usr/bin/python
 import smbus
 import math
+import sys
+
+sys.path.append("/home/pi/Starla")
+from Sensors.Sensor import Sensor
 
 # Register
 power_mgmt_1 = 0x6b
@@ -13,8 +17,10 @@ address = 0x68  # via i2cdetect
 bus.write_byte_data(address, power_mgmt_1, 0)
 
 
-class MPU6050:
+class MPU6050(Sensor):
     def __init__(self):
+        super().__init__()
+        
         self.acelerometer = self.Acelerometer()
         self.gyroscope = self.Gyroscope()
 
