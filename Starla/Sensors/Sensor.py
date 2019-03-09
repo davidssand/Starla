@@ -5,11 +5,11 @@ class Sensor:
     def __str__(self):
         return self.__class__.__name__
 
-    def readData(self):
+    def get_data(self):
         pass
 
-    def showData(self):
+    def show_data(self):
         pass
     
-    def dataPackage(self):
+    def data_pack(self):
         pass

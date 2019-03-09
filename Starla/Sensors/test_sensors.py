@@ -18,8 +18,8 @@ class Tester:
         print("Testing " + str(sensor))
         msg = ""
         c = ""
-        for i in range(len(sensor.dataPackage())):
-            msg += c + str(sensor.dataPackage()[i])
+        for i in range(len(sensor.data_pack())):
+            msg += c + str(sensor.data_pack()[i])
             c = ","
         return msg
 

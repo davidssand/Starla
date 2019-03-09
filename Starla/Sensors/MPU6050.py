@@ -42,6 +42,9 @@ class MPU6050(Sensor):
             self.y = 0
             self.z = 0
 
+        def scale(self, a):
+            return a / 131
+
     def read_byte(self, reg):
         return bus.read_byte_data(address, reg)
 
@@ -69,10 +72,14 @@ class MPU6050(Sensor):
         radians = math.atan2(y, self.dist(x, z))
         return math.degrees(radians)
 
-    def readData(self):
+    def get_data(self):
         self.gyroscope.x = self.read_word_2c(0x43)
         self.gyroscope.y = self.read_word_2c(0x45)
         self.gyroscope.z = self.read_word_2c(0x47)
+
+        self.gyroscope.x_scaled = self.gyroscope.scale(self.gyroscope.x)
+        self.gyroscope.y_scaled = self.gyroscope.scale(self.gyroscope.y)
+        self.gyroscope.z_scaled = self.gyroscope.scale(self.gyroscope.z)
 
         self.acelerometer.x = self.read_word_2c(0x3b)
         self.acelerometer.y = self.read_word_2c(0x3d)
@@ -82,28 +89,36 @@ class MPU6050(Sensor):
         self.acelerometer.y_scaled = self.acelerometer.scale(self.acelerometer.y)
         self.acelerometer.z_scaled = self.acelerometer.scale(self.acelerometer.z)
 
-    def showData(self):
+        self.xAngle = self.get_x_rotation(self.acelerometer.x_scaled, self.acelerometer.y_scaled, self.acelerometer.z_scaled)
+        self.yAngle = self.get_y_rotation(self.acelerometer.x_scaled, self.acelerometer.y_scaled, self.acelerometer.z_scaled)
+        self.zAngle = 0     # No magnetometer data
 
-        self.readData()
+    def show_data(self):
 
+        self.get_data()
+
+        print("-------------")
         print("Gyroscope")
-        print("----------------")
+        print("-------------")
 
-        print("Gyroscope_xout: ", ("%5d" % self.gyroscope.x), " scaled: ", (self.gyroscope.x / 131))
-        print("Gyroscope_yout: ", ("%5d" % self.gyroscope.y), " scaled: ", (self.gyroscope.y / 131))
-        print("Gyroscope_zout: ", ("%5d" % self.gyroscope.z), " scaled: ", (self.gyroscope.z / 131))
+        print("Gyroscope_x: ", self.gyroscope.x_scaled)
+        print("Gyroscope_y: ", self.gyroscope.y_scaled)
+        print("Gyroscope_z: ", self.gyroscope.z_scaled)
 
+        print("-------------")
         print("Acelerometer")
-        print("----------------")
+        print("-------------")
 
-        print("Acelerometer_xout: ", ("%6d" % self.acelerometer.x), " scaled: ", self.acelerometer.x_scaled)
-        print("Acelerometer_yout: ", ("%6d" % self.acelerometer.y), " scaled: ", self.acelerometer.y_scaled)
-        print("Acelerometer_zout: ", ("%6d" % self.acelerometer.z), " scaled: ", self.acelerometer.z_scaled)
+        print("Acelerometer_x: ", self.acelerometer.x_scaled)
+        print("Acelerometer_y: ", self.acelerometer.y_scaled)
+        print("Acelerometer_z: ", self.acelerometer.z_scaled)
 
-        print("X Rotation: ",
-              self.get_x_rotation(self.acelerometer.x_scaled, self.acelerometer.y_scaled, self.acelerometer.z_scaled))
-        print("Y Rotation: ",
-              self.get_y_rotation(self.acelerometer.x_scaled, self.acelerometer.y_scaled, self.acelerometer.z_scaled))
+        print("-------------")
+        print("Whole Sensor")
+        print("-------------")
+
+        print("X Rotation: ", self.xAngle)
+        print("Y Rotation: ", self.yAngle)
 
     def running_mean(self, data, N):
         sum = 0
@@ -119,9 +134,6 @@ class MPU6050(Sensor):
 
         return result
 
-    def dataPackage(self):
-        self.readData()
-        xAngle = self.get_x_rotation(self.acelerometer.x_scaled, self.acelerometer.y_scaled, self.acelerometer.z_scaled)
-        yAngle = self.get_y_rotation(self.acelerometer.x_scaled, self.acelerometer.y_scaled, self.acelerometer.z_scaled)
-        zAngle = 0
-        return [round(xAngle, 1), round(yAngle, 1), round(zAngle, 1)]
+    def data_pack(self):
+        self.get_data()
+        return [round(self.xAngle, 1), round(self.yAngle, 1), round(self.zAngle, 1)]

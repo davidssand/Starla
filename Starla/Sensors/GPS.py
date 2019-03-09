@@ -16,7 +16,7 @@ class GPS(Sensor):
         self.session = gps.gps("localhost", "2947")
         self.session.stream(gps.WATCH_ENABLE | gps.WATCH_NEWSTYLE)
 
-    def readData(self):
+    def get_data(self):
         rep = self.session.next()
         try :
             if (rep["class"] == "TPV") :
@@ -26,8 +26,8 @@ class GPS(Sensor):
         except Exception as e :
             print("Got exception " + str(e))
     
-    def showData(self):
-        self.readData()
+    def show_data(self):
+        self.get_data()
 
         print("GPS")
         print("----------------")
@@ -36,6 +36,6 @@ class GPS(Sensor):
         print("Longiteude = ", self.longitude)
         print()
         
-    def dataPackage(self):
-        self.readData()
+    def data_pack(self):
+        self.get_data()
         return [self.latitude, self.longitude]

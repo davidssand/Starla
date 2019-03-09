@@ -170,12 +170,12 @@ class BME280(Sensor):
 
         return temperature / 100.0, pressure / 100.0, humidity, hight    
 
-    def readData(self):
+    def get_data(self):
         (self.chip_id, self.chip_version) = self.readBME280ID()
         self.temperature, self.pressure, self.humidity, self.hight = self.readBME280All()    
 
-    def showData(self):
-        self.readData()
+    def show_data(self):
+        self.get_data()
 
         print("BME280")
         print("----------------")
@@ -189,8 +189,8 @@ class BME280(Sensor):
         print("Hight : ", self.hight, "m")
     
 
-    def dataPackage(self):
-        self.readData()
+    def data_pack(self):
+        self.get_data()
         self.temperature, self.pressure, self.humidity, self.hight = self.readBME280All()
         data = [round(self.temperature, 1), round(self.pressure, 1), round(self.hight, 1)]
         return data
