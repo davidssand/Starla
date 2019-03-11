@@ -32,3 +32,5 @@ class Tester:
         msg += "#\n"
         return msg
 
+t = Tester()
+

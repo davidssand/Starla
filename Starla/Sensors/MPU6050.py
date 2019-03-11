@@ -6,51 +6,50 @@ import sys
 sys.path.append("/home/pi/Starla")
 from Sensors.Sensor import Sensor
 
-# Register
-power_mgmt_1 = 0x6b
-power_mgmt_2 = 0x6c
-
-bus = smbus.SMBus(1)  # bus = smbus.SMBus(0)
-address = 0x68  # via i2cdetect
-
-# Ativacao
-bus.write_byte_data(address, power_mgmt_1, 0)
-
 
 class MPU6050(Sensor):
     def __init__(self):
         super().__init__()
+
+        # Register
+        self.power_mgmt_1 = 0x6b
+        self.power_mgmt_2 = 0x6c
+
+        self.bus = smbus.SMBus(1)  # bus = smbus.SMBus(0)
+        self.address = 0x68  # via i2cdetect
+
+        # Ativacao
+        self.bus.write_byte_data(self.address, self.power_mgmt_1, 0)
         
         self.acelerometer = self.Acelerometer()
         self.gyroscope = self.Gyroscope()
 
+        self.angle = [0, 0, 0]
+
     class Acelerometer:
         def __init__(self):
-            self.x = 0
-            self.y = 0
-            self.z = 0
-            self.x_scaled = 0
-            self.y_scaled = 0
-            self.z_scaled = 0
+            self.raw = [0, 0, 0]
+            self.scaled = [0, 0, 0]
+            self.angle = [0, 0, 0]
 
         def scale(self, a):
-            return a / 16384.0
+            return a / 16384.0  # Convert to G's
 
     class Gyroscope:
         def __init__(self):
-            self.x = 0
-            self.y = 0
-            self.z = 0
+            self.vel_raw = [0, 0, 0]
+            self.vel_scaled = [0, 0, 0]
+            self.angle = [0, 0, 0]
 
         def scale(self, a):
-            return a / 131
+            return a / 131  # Convert to degrees/second
 
     def read_byte(self, reg):
-        return bus.read_byte_data(address, reg)
+        return self.bus.read_byte_data(self.address, reg)
 
     def read_word(self, reg):
-        h = bus.read_byte_data(address, reg)
-        l = bus.read_byte_data(address, reg + 1)
+        h = self.bus.read_byte_data(self.address, reg)
+        l = self.bus.read_byte_data(self.address, reg + 1)
         value = (h << 8) + l
         return value
 
@@ -71,54 +70,59 @@ class MPU6050(Sensor):
     def get_x_rotation(self, x, y, z):
         radians = math.atan2(y, self.dist(x, z))
         return math.degrees(radians)
+    
+    # Complementary Filter
+    def filtered_angle(self, sampling_rate, gyroscope_angle, acelerometer_angle):
+        alpha = 1 / (1 + sampling_rate)
+        return alpha * gyroscope_angle + (1 - alpha) * acelerometer_angle
 
-    def get_data(self):
-        self.gyroscope.x = self.read_word_2c(0x43)
-        self.gyroscope.y = self.read_word_2c(0x45)
-        self.gyroscope.z = self.read_word_2c(0x47)
+    def get_raw_data(self):
+        self.gyroscope.vel_raw[0] = self.read_word_2c(0x43)
+        self.gyroscope.vel_raw[1] = self.read_word_2c(0x45)
+        self.gyroscope.vel_raw[2] = self.read_word_2c(0x47)
+        self.acelerometer.raw[0] = self.read_word_2c(0x3b)
+        self.acelerometer.raw[1] = self.read_word_2c(0x3d)
+        self.acelerometer.raw[2] = self.read_word_2c(0x3f)
+    
+    def get_data(self, sampling_rate):
+        self.get_raw_data()
 
-        self.gyroscope.x_scaled = self.gyroscope.scale(self.gyroscope.x)
-        self.gyroscope.y_scaled = self.gyroscope.scale(self.gyroscope.y)
-        self.gyroscope.z_scaled = self.gyroscope.scale(self.gyroscope.z)
+        self.acelerometer.angle[0] = self.get_x_rotation(self.acelerometer.scaled[0], self.acelerometer.scaled[1], self.acelerometer.scaled[2])
+        self.acelerometer.angle[1] = self.get_y_rotation(self.acelerometer.scaled[0], self.acelerometer.scaled[1], self.acelerometer.scaled[2])
+        self.acelerometer.angle[2] = 0     # No magnetometer data
 
-        self.acelerometer.x = self.read_word_2c(0x3b)
-        self.acelerometer.y = self.read_word_2c(0x3d)
-        self.acelerometer.z = self.read_word_2c(0x3f)
-
-        self.acelerometer.x_scaled = self.acelerometer.scale(self.acelerometer.x)
-        self.acelerometer.y_scaled = self.acelerometer.scale(self.acelerometer.y)
-        self.acelerometer.z_scaled = self.acelerometer.scale(self.acelerometer.z)
-
-        self.xAngle = self.get_x_rotation(self.acelerometer.x_scaled, self.acelerometer.y_scaled, self.acelerometer.z_scaled)
-        self.yAngle = self.get_y_rotation(self.acelerometer.x_scaled, self.acelerometer.y_scaled, self.acelerometer.z_scaled)
-        self.zAngle = 0     # No magnetometer data
-
-    def show_data(self):
-
-        self.get_data()
-
-        print("-------------")
-        print("Gyroscope")
-        print("-------------")
-
-        print("Gyroscope_x: ", self.gyroscope.x_scaled)
-        print("Gyroscope_y: ", self.gyroscope.y_scaled)
-        print("Gyroscope_z: ", self.gyroscope.z_scaled)
+        for i in range(0, 3):
+            self.gyroscope.vel_scaled[i] = self.gyroscope.scale(self.gyroscope.vel_raw[i])
+            self.gyroscope.angle[i] = self.angle[i] + self.gyroscope.vel_scaled[i] * sampling_rate
+            self.acelerometer.scaled[i] = self.acelerometer.scale(self.acelerometer.raw[i])
+            self.angle[i] = self.filtered_angle(sampling_rate, self.gyroscope.angle[i], self.acelerometer.angle[i])            
+        
+    def show_data(self, sampling_rate):
+        self.get_data(sampling_rate)
 
         print("-------------")
-        print("Acelerometer")
+        print("Gyroscope_angles")
         print("-------------")
 
-        print("Acelerometer_x: ", self.acelerometer.x_scaled)
-        print("Acelerometer_y: ", self.acelerometer.y_scaled)
-        print("Acelerometer_z: ", self.acelerometer.z_scaled)
+        print("Gyroscope_x: ", self.gyroscope.angle[0])
+        print("Gyroscope_y: ", self.gyroscope.angle[1])
+        print("Gyroscope_z: ", self.gyroscope.angle[2])
 
         print("-------------")
-        print("Whole Sensor")
+        print("Acelerometer_angles")
         print("-------------")
 
-        print("X Rotation: ", self.xAngle)
-        print("Y Rotation: ", self.yAngle)
+        print("Acelerometer_x: ", self.acelerometer.angle[0])
+        print("Acelerometer_y: ", self.acelerometer.angle[1])
+        print("Acelerometer_z: ", self.acelerometer.angle[2])
+
+        print("-------------")
+        print("Rocket_angle")
+        print("-------------")
+
+        print("X Rotation: ", self.angle[0])
+        print("Y Rotation: ", self.angle[1])
+        print("Y Rotation: ", self.angle[2])    # Do not trust
 
     def running_mean(self, data, N):
         sum = 0
@@ -134,6 +138,6 @@ class MPU6050(Sensor):
 
         return result
 
-    def data_pack(self):
-        self.get_data()
+    def data_pack(self, sampling_rate):
+        self.get_data(sampling_rate)
         return [round(self.xAngle, 1), round(self.yAngle, 1), round(self.zAngle, 1)]
