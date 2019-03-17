@@ -6,6 +6,7 @@ Created on Thu Jan 29 21:03:57 2019
 @author: David
 """
 import sys
+import numpy as np
 
 sys.path.append("/home/pi/Starla")
 
@@ -29,9 +30,9 @@ class State:
 
     def __init__(self):
         print('Current state:', str(self))
-        self.checkChange()
+        self.check_change()
 
-    def checkChange(self):
+    def check_change(self):
         pass
 
     def on_event(self):
@@ -44,64 +45,40 @@ class State:
         return self.__class__.__name__
 
 
-class WaitingIgnition(State):
-    """
-        Waiting for ignition.
-    """
-
-    def on_event(self):
-        return Ignited()
-
-
-class Ignited(State):
+class WaitingAscention(State):
     """
         Rocket has been ignited
     """
 
-    def checkChange(self):
-        while Acceleration < constant:
-            pass
-
-        self.on_event()
+    change_checker(acceleration, valid_value, operator.gt, validation_time, self.on_event())         
 
     def on_event(self):
-        return ThrustedAscending()
+        return ThrustedAscention()
 
 
-class ThrustedAscending(State):
+class ThrustedAscention(State):
     """
         Rocket is acceleration upwards
     """
-
-    def checkChange(self):
-        while Acceleration > constant:
-            pass
-
-        self.on_event()
+    change_checker(acceleration, valid_value, operator.lt, validation_time, self.on_event())         
 
     def on_event(self):
-        return FreeAscending()
+        return DetectApogee()
 
-
-class FreeAscending(State):
+class DetectFall(State):
     """
 
     """
-
-    def checkChange(self):
-        while zVelocity > 0:
-            pass
-
-        self.on_event()
+    change_checker(z_velocity, valid_value, operator.lt, validation_time, self.on_event())         
 
     def on_event(self):
         return Apogee()
-
 
 class Apogee(State):
     """
 
     """
+
     def __init__(self):
         super().__init__()
         parachute.activate()
@@ -116,7 +93,7 @@ class FreeDescent(State):
 
     """
 
-    def checkChange(self):
+    def check_change(self):
         while (!slowed_down):
             pass
 
@@ -131,7 +108,7 @@ class OpenedParachute(State):
         Rocket hit the ground
     """
 
-    def checkChange(self):
+    def check_change(self):
         while abs(velocity) > 0:
             pass
 
@@ -144,3 +121,15 @@ class GroundHit(State):
     """
         Rocket hit the ground
     """
+
+def change_checker(validation_variable, valid_value, operator, validation_time, returned):
+    if operator(validation_variable, valid_value):
+        time_zero = time.time()
+        while time.time() - time_zero < validation_time:
+            if operator(valid_value, validation_variable):
+                break
+        else:
+            return returned
+        return None
+
+
