@@ -10,46 +10,45 @@ from Actuators.Camera import Camera
 from Actuators.Parachute import Parachute
 
 from Managers.Thread import Thread
-from Managers.States import WaitingIgnition
-from Managers.States import DetectFall
+from Managers.States import *
 
 class Rocket:
-    """
-    State machine of rocket
-    """
+  """
+  State machine of rocket
+  """
 
-    def __init__(self):
-        self.mpu6050 = MPU6050()
-        self.bme280 = BME280()
-        self.transmitter = Transmitter()
-        self.camera = Camera()
-        self.parachute = Parachute()
-    
-        # Pipe throught states
-        states_thread = Thread("Run thought states", states_pipe())
+  def __init__(self):
+    self.mpu6050 = MPU6050()
+    self.bme280 = BME280()
+    self.transmitter = Transmitter()
+    self.camera = Camera()
+    self.parachute = Parachute()
 
-        # Transmites data
-        transmitter_thread = Thread("Transmitting data", self.transmitter.start_transmition())      
+    activate_threads()
+    detect_fall()
 
-        while self.state == WaitingIgnition():
-            pass
-        else:
-            # Spare thread for detecting fall
-            fall_detection_thread = Thread("Fall detector", detect_fall())
+  def activate_threads(self):
+    # Pipe throught states
+    self.states_thread = Thread("Run thought states", states_pipe())
 
-        def states_pipe():
-            # Starting with a default state
-            self.state = WaitingIgnition()
-            self.state.check_change()
+    # Transmites data
+    self.transmitter_thread = Thread("Transmitting data", self.transmitter.start_transmition())     
 
-        def detect_fall(self):
-            while 1:
-                if z_velocity < 0:
-                    time_zero = time.time()
-                    while time.time() - time_zero < data_validation_time:
-                        if z_velocity > 0:
-                            break
-                    else:
-                        is_falling == True
-            
-        
+    # Stores data
+    self.storer_thread = Thread("Storing data"), self.store_data())
+
+  def states_pipe(self):
+    # Starting with a default state
+    self.state = WaitingIgnition()
+    self.state.check_change()
+
+  def store_data(self):
+
+
+  def detect_fall(self):
+    is_falling = False
+    change_checker(z_velocity, 0, operator.lt, validation_time, self.is_falling())
+      
+  def is_falling(self):
+    self.state = Apogee()
+    self.state.check_change()
