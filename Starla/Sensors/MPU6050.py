@@ -2,6 +2,7 @@
 import smbus
 import math
 import sys
+import numpy as np
 
 sys.path.append("/home/pi/Starla")
 from Sensors.Sensor import Sensor
@@ -21,25 +22,26 @@ class MPU6050(Sensor):
         # Ativacao
         self.bus.write_byte_data(self.address, self.power_mgmt_1, 0)
         
-        self.acelerometer = self.Acelerometer()
+        self.accelerometer = self.accelerometer()
         self.gyroscope = self.Gyroscope()
 
-        self.angle = [0, 0, 0]
+        self.angle = np.array([0, 0, 0])
+        self.z_acceleration = 0
 
-    class Acelerometer:
+    class accelerometer:
         def __init__(self):
-            self.raw = [0, 0, 0]
-            self.scaled = [0, 0, 0]
-            self.angle = [0, 0, 0]
+            self.raw = np.array([0, 0, 0])
+            self.scaled = np.array([0, 0, 0])
+            self.angle = np.array([0, 0, 0])
 
         def scale(self, a):
             return a / 16384.0  # Convert to G's
 
     class Gyroscope:
         def __init__(self):
-            self.vel_raw = [0, 0, 0]
-            self.vel_scaled = [0, 0, 0]
-            self.angle = [0, 0, 0]
+            self.raw = np.array([0, 0, 0])
+            self.scaled = np.array([0, 0, 0])
+            self.angle = np.array([0, 0, 0])
 
         def scale(self, a):
             return a / 131  # Convert to degrees/second
@@ -63,66 +65,65 @@ class MPU6050(Sensor):
     def dist(self, a, b):
         return math.sqrt((a * a) + (b * b))
 
-    def get_y_rotation(self, x, y, z):
-        radians = math.atan2(x, self.dist(y, z))
-        return -math.degrees(radians)
-
-    def get_x_rotation(self, x, y, z):
-        radians = math.atan2(y, self.dist(x, z))
-        return math.degrees(radians)
-    
-    # Complementary Filter
-    def filtered_angle(self, sampling_rate, gyroscope_angle, acelerometer_angle):
-        alpha = 1 / (1 + sampling_rate)
-        return alpha * gyroscope_angle + (1 - alpha) * acelerometer_angle
-
     def get_raw_data(self):
-        self.gyroscope.vel_raw[0] = self.read_word_2c(0x43)
-        self.gyroscope.vel_raw[1] = self.read_word_2c(0x45)
-        self.gyroscope.vel_raw[2] = self.read_word_2c(0x47)
-        self.acelerometer.raw[0] = self.read_word_2c(0x3b)
-        self.acelerometer.raw[1] = self.read_word_2c(0x3d)
-        self.acelerometer.raw[2] = self.read_word_2c(0x3f)
+        self.gyroscope.raw[0] = self.read_word_2c(0x43)
+        self.gyroscope.raw[1] = self.read_word_2c(0x45)
+        self.gyroscope.raw[2] = self.read_word_2c(0x47)
+        self.accelerometer.raw[0] = self.read_word_2c(0x3b)
+        self.accelerometer.raw[1] = self.read_word_2c(0x3d)
+        self.accelerometer.raw[2] = self.read_word_2c(0x3f)
     
-    def get_data(self, sampling_rate):
+    def get_scaled_data(self):
         self.get_raw_data()
+        self.gyroscope.scaled = -self.gyroscope.scale(self.gyroscope.raw)
+        self.accelerometer.scaled = self.accelerometer.scale(self.accelerometer.raw)
 
-        self.acelerometer.angle[0] = self.get_x_rotation(self.acelerometer.scaled[0], self.acelerometer.scaled[1], self.acelerometer.scaled[2])
-        self.acelerometer.angle[1] = self.get_y_rotation(self.acelerometer.scaled[0], self.acelerometer.scaled[1], self.acelerometer.scaled[2])
-        self.acelerometer.angle[2] = 0     # No magnetometer data
+    def get_rotation_rad(self, v):
+        return [math.atan2(v[0], self.dist(v[1], v[2])), -math.atan2(v[1], self.dist(v[0], v[2])), math.atan2(v[2], self.dist(v[0], v[1]))]
+    
+    def get_rotation_deg(self, v):
+        return -(np.degrees(self.get_rotation_rad(v)))
+    
+    def get_z_acceleration(self, v):
+        return np.sum(np.absolute(v))
 
-        for i in range(0, 3):
-            self.gyroscope.vel_scaled[i] = self.gyroscope.scale(self.gyroscope.vel_raw[i])
-            self.gyroscope.angle[i] = self.angle[i] + self.gyroscope.vel_scaled[i] * sampling_rate
-            self.acelerometer.scaled[i] = self.acelerometer.scale(self.acelerometer.raw[i])
-            self.angle[i] = self.filtered_angle(sampling_rate, self.gyroscope.angle[i], self.acelerometer.angle[i])            
+    # Complementary Filter
+    def filtered_angle(self, sampling_rate, gyroscope_angle, accelerometer_angle):
+        alpha = 1 / (1 + sampling_rate)
+        return alpha * gyroscope_angle + (1 - alpha) * accelerometer_angle
+
+    def get_data(self, sampling_rate):
+        self.get_scaled_data()
+
+        self.accelerometer.angle = self.get_rotation_deg(self.accelerometer.scaled)
+        self.gyroscope.angle = self.angle + self.gyroscope.scaled * sampling_rate
+        self.angle = self.filtered_angle(sampling_rate, self.gyroscope.angle, self.accelerometer.angle)     
+        
+        self.z_acceleration = self.get_z_acceleration(self.accelerometer.scaled)
         
     def show_data(self, sampling_rate):
         self.get_data(sampling_rate)
 
         print("-------------")
-        print("Gyroscope_angles")
+        print("Gyroscope")
         print("-------------")
 
-        print("Gyroscope_x: ", self.gyroscope.angle[0])
-        print("Gyroscope_y: ", self.gyroscope.angle[1])
-        print("Gyroscope_z: ", self.gyroscope.angle[2])
+        print("Gyroscope_angles: ", self.gyroscope.angle)
 
         print("-------------")
-        print("Acelerometer_angles")
+        print("Accelerometer")
         print("-------------")
 
-        print("Acelerometer_x: ", self.acelerometer.angle[0])
-        print("Acelerometer_y: ", self.acelerometer.angle[1])
-        print("Acelerometer_z: ", self.acelerometer.angle[2])
+        print("Accelerometer_acc: ", self.accelerometer.scaled)
+        print("Accelerometer_angles: ", self.accelerometer.angle)
 
         print("-------------")
-        print("Rocket_angle")
+        print("Rocket")
         print("-------------")
 
-        print("X Rotation: ", self.angle[0])
-        print("Y Rotation: ", self.angle[1])
-        print("Y Rotation: ", self.angle[2])    # Do not trust
+        print("Rocket_angles: ", self.angle)
+
+        print("Z acceleration: ", self.z_acceleration)
 
     def running_mean(self, data, N):
         sum = 0

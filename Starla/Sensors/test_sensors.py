@@ -13,6 +13,14 @@ class Tester:
         self.mpu6050 = MPU6050()
         self.gps = GPS()
         self.t = time.time()
+
+    def show_sensor_data(self, sensor, delay):
+        while True:
+            time.sleep(delay)
+            try:
+                sensor.show_data(delay)
+            except:
+                sensor.show_data()
     
     def test_sensor(self, sensor):
         print("Testing " + str(sensor))
@@ -31,6 +39,4 @@ class Tester:
         msg += self.test_sensor(self.gps)
         msg += "#\n"
         return msg
-
-t = Tester()
 
