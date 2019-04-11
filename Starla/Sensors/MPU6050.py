@@ -65,27 +65,28 @@ class MPU6050(Sensor):
     def dist(self, a, b):
         return math.sqrt((a * a) + (b * b))
 
-    def get_raw_data(self):
-        self.gyroscope.raw[0] = self.read_word_2c(0x43)
-        self.gyroscope.raw[1] = self.read_word_2c(0x45)
-        self.gyroscope.raw[2] = self.read_word_2c(0x47)
+    def get_accelerometer_data(self):
         self.accelerometer.raw[0] = self.read_word_2c(0x3b)
         self.accelerometer.raw[1] = self.read_word_2c(0x3d)
         self.accelerometer.raw[2] = self.read_word_2c(0x3f)
-    
-    def get_scaled_data(self):
-        self.get_raw_data()
-        self.gyroscope.scaled = -self.gyroscope.scale(self.gyroscope.raw)
+
         self.accelerometer.scaled = self.accelerometer.scale(self.accelerometer.raw)
+    
+    def get_gyroscope_data(self):
+        self.gyroscope.raw[0] = self.read_word_2c(0x43)
+        self.gyroscope.raw[1] = self.read_word_2c(0x45)
+        self.gyroscope.raw[2] = self.read_word_2c(0x47)
+
+        self.gyroscope.scaled = -self.gyroscope.scale(self.gyroscope.raw)
 
     def get_rotation_rad(self, v):
         return [math.atan2(v[0], self.dist(v[1], v[2])), -math.atan2(v[1], self.dist(v[0], v[2])), math.atan2(v[2], self.dist(v[0], v[1]))]
     
     def get_rotation_deg(self, v):
-        return -(np.degrees(self.get_rotation_rad(v)))
+        return -np.degrees(self.get_rotation_rad(v))
     
-    def get_z_acceleration(self, v):
-        return np.sum(np.absolute(v))
+    def get_z_acceleration(self, accels):
+        return np.sum(np.absolute(accels))
 
     # Complementary Filter
     def filtered_angle(self, sampling_rate, gyroscope_angle, accelerometer_angle):
@@ -93,7 +94,8 @@ class MPU6050(Sensor):
         return alpha * gyroscope_angle + (1 - alpha) * accelerometer_angle
 
     def get_data(self, sampling_rate):
-        self.get_scaled_data()
+        self.get_gyroscope_data()
+        self.get_accelerometer_data()
 
         self.accelerometer.angle = self.get_rotation_deg(self.accelerometer.scaled)
         self.gyroscope.angle = self.angle + self.gyroscope.scaled * sampling_rate
