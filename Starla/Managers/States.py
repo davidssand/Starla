@@ -76,9 +76,9 @@ class DetectFall(State):
     return change_checker(z_velocity, 0, operator.lt, validation_time, self.on_event         
 
   def on_event(self):
-    return Apogee()
+    return FreeDescent()
 
-class Apogee(State):
+class FreeDescent(State):
   """
 
   """
@@ -87,15 +87,6 @@ class Apogee(State):
     super().__init__()
     parachute.activate()
     self.on_event()
-
-  def on_event(self):
-    return FreeDescent()
-
-
-class FreeDescent(State):
-  """
-
-  """
 
   def check_change(self):
     return change_checker(slowed_down_variabel, valid_value, operator.gt, validation_time, self.on_event:
