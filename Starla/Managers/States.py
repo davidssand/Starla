@@ -7,6 +7,7 @@ Created on Thu Jan 29 21:03:57 2019
 """
 import sys
 import numpy as np
+import operator
 
 sys.path.append("/home/pi/Starla")
 
@@ -51,7 +52,7 @@ class WaitingAscension(State):
   """
 
   def check_change(self):
-      return change_checker(acceleration, valid_value, operator.gt, validation_time, self.on_event())         
+      return change_checker(acceleration, valid_value, operator.gt, validation_time, self.on_event         
 
   def on_event(self):
       return ThrustedAscension()
@@ -62,7 +63,7 @@ class ThrustedAscension(State):
       Rocket is acceleration upwards
   """
   def check_change(self):
-    return change_checker(acceleration, valid_value, operator.lt, validation_time, self.on_event())         
+    return change_checker(acceleration, valid_value, operator.lt, validation_time, self.on_event         
 
   def on_event(self):
     return DetectApogee()
@@ -72,7 +73,7 @@ class DetectFall(State):
 
   """
   def check_change(self):
-    return change_checker(z_velocity, 0, operator.lt, validation_time, self.on_event())         
+    return change_checker(z_velocity, 0, operator.lt, validation_time, self.on_event         
 
   def on_event(self):
     return Apogee()
@@ -97,7 +98,7 @@ class FreeDescent(State):
   """
 
   def check_change(self):
-    return change_checker(slowed_down_variabel, valid_value, operator.gt, validation_time, self.on_event()):
+    return change_checker(slowed_down_variabel, valid_value, operator.gt, validation_time, self.on_event:
 
   def on_event(self):
     return OpenedParachute()
@@ -109,7 +110,7 @@ class OpenedParachute(State):
   """
 
   def check_change(self):
-    return change_checker(velocity, 0, operator.eq, validation_time, self.on_event()):
+    return change_checker(velocity, 0, operator.eq, validation_time, self.on_event:
 
   def on_event(self):
     return GroundHit()
@@ -120,13 +121,12 @@ class GroundHit(State):
     """
 
 def change_checker(validation_variable, valid_value, operator, validation_time, returned):
-  if operator(validation_variable, valid_value):
-    time_zero = time.time()
-    while time.time() - time_zero < validation_time:
-      if operator(valid_value, validation_variable):
-          break
-    else:
-      return returned
-    return None
-
+  while 1:
+    if operator(validation_variable, valid_value):
+      time_zero = time.time()
+      while time.time() - time_zero < validation_time:
+        if operator(valid_value, validation_variable):
+            break
+      else:
+        return returned()
 
