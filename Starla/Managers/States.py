@@ -52,7 +52,10 @@ class WaitingAscension(State):
   """
 
   def check_change(self):
-      return change_checker(acceleration, valid_value, operator.gt, validation_time, self.on_event         
+    change = False
+    while not change:
+      change = change_checker(acceleration, valid_value, operator.gt, validation_time)
+    return self.on_event()  
 
   def on_event(self):
       return ThrustedAscension()
@@ -63,7 +66,7 @@ class ThrustedAscension(State):
       Rocket is acceleration upwards
   """
   def check_change(self):
-    return change_checker(acceleration, valid_value, operator.lt, validation_time, self.on_event         
+    return change_checker(acceleration, valid_value, operator.lt, validation_time, self.on_event)       
 
   def on_event(self):
     return DetectApogee()
@@ -73,7 +76,7 @@ class DetectFall(State):
 
   """
   def check_change(self):
-    return change_checker(z_velocity, 0, operator.lt, validation_time, self.on_event         
+    return change_checker(z_velocity, 0, operator.lt, validation_time, self.on_event)    
 
   def on_event(self):
     return FreeDescent()
@@ -89,7 +92,7 @@ class FreeDescent(State):
     self.on_event()
 
   def check_change(self):
-    return change_checker(slowed_down_variabel, valid_value, operator.gt, validation_time, self.on_event:
+    return change_checker(slowed_down_variabel, valid_value, operator.gt, validation_time, self.on_event)
 
   def on_event(self):
     return OpenedParachute()
@@ -101,7 +104,7 @@ class OpenedParachute(State):
   """
 
   def check_change(self):
-    return change_checker(velocity, 0, operator.eq, validation_time, self.on_event:
+    return change_checker(velocity, 0, operator.eq, validation_time, self.on_event)
 
   def on_event(self):
     return GroundHit()
@@ -111,13 +114,12 @@ class GroundHit(State):
         Rocket hit the ground
     """
 
-def change_checker(validation_variable, valid_value, operator, validation_time, returned):
-  while 1:
-    if operator(validation_variable, valid_value):
-      time_zero = time.time()
-      while time.time() - time_zero < validation_time:
-        if operator(valid_value, validation_variable):
-            break
-      else:
-        return returned()
+def change_checker(validation_variable, valid_value, operator, validation_time):
+  if operator(validation_variable, valid_value):
+    time_zero = time.time()
+    while time.time() - time_zero < validation_time:
+      if operator(valid_value, validation_variable):
+          break
+    else:
+      return True
 

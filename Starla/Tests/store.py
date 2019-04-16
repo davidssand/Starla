@@ -2,20 +2,28 @@ import time
 import numpy as np
 import pandas as pd
 
+data = {"time":  [],
+        "altitude": [],
+        "pitch": []}
+
+df = pd.DataFrame({"time":  [],
+        "altitude": [],
+        "pitch": []})
+
+df.to_csv(r'data.csv')
+
 data = {"time":  [10, 20, 30, 40],
         "altitude": [3, 20, 70, 123],
         "pitch": [20, 25, 30, 30]}
 
-df = pd.DataFrame.from_dict(data)
+df = pd.DataFrame(data)
 
-print(df)
+df.to_csv('data.csv', mode='a', header=False)
 
-df.to_csv(r'data.csv')
-
-data1 = {"time":  [1234, 1234, 241],
+data = {"time":  [1234, 1234, 241],
         "altitude": [123, 0, 43],
         "pitch": [1213, 55, 67]}
 
-a = pd.DataFrame.from_dict(data1)
+df = pd.DataFrame(data)
 
-a.to_csv('data.csv', mode='a', header=False)
+df.to_csv('data.csv', mode='a', header=False)

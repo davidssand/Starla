@@ -1,5 +1,10 @@
 import math
 import numpy as np
+import time
 
-a = np.array([1, 4, 5])
-print(np.sum(a))
+a = False
+while not a:
+  time.sleep(1)
+  a = True
+
+print("inj")
