@@ -17,11 +17,16 @@ class Tester:
     def show_sensor_data(self, sensor, delay):
         while True:
             time.sleep(delay)
-            try:
-                sensor.show_data(delay)
-            except:
-                sensor.show_data()
+            sensor.show_data(delay)
     
+    def show_sensor_pack(self, sensor, delay):
+        while True:
+            time.sleep(delay)
+            try:
+                print(sensor.data_pack(delay))
+            except:
+                print(sensor.data_pack())
+
     def test_sensor(self, sensor):
         print("Testing " + str(sensor))
         msg = ""

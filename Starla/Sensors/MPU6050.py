@@ -28,6 +28,13 @@ class MPU6050(Sensor):
         self.angle = np.array([0, 0, 0])
         self.z_acceleration = 0
 
+        # Filter
+        # rm = running mean
+        self.rm_lenght = 100
+        self.rm_sum = 0
+        self.rm_input_index = 0
+        self.rm_result = [0 for _ in range(0, self.rm_lenght)]
+
     class accelerometer:
         def __init__(self):
             self.raw = np.array([0, 0, 0])
@@ -80,12 +87,16 @@ class MPU6050(Sensor):
         self.gyroscope.scaled = -self.gyroscope.scale(self.gyroscope.raw)
 
     def get_rotation_rad(self, v):
-        return [math.atan2(v[0], self.dist(v[1], v[2])), -math.atan2(v[1], self.dist(v[0], v[2])), math.atan2(v[2], self.dist(v[0], v[1]))]
-    
+        return [math.atan2(v[0], self.dist(v[1], v[2])) - math.pi/2.0,
+         math.atan2(v[1], self.dist(v[0], v[2])) - math.pi/2.0,
+         math.atan2(v[2], self.dist(v[0], v[1])) - math.pi/2.0]
+
+        # return [math.atan2(v[i], self.dist(v[i==False], v[2-i//2])) - math.pi for i in range(0, 3)]
+
     def get_rotation_deg(self, v):
-        return -np.degrees(self.get_rotation_rad(v))
+        return np.degrees(self.get_rotation_rad(v))
     
-    def get_z_acceleration(self, accels):
+    def get_total_accel(self, accels):
         return np.sum(np.absolute(accels))
 
     # Complementary Filter
@@ -101,7 +112,7 @@ class MPU6050(Sensor):
         self.gyroscope.angle = self.angle + self.gyroscope.scaled * sampling_rate
         self.angle = self.filtered_angle(sampling_rate, self.gyroscope.angle, self.accelerometer.angle)     
         
-        self.z_acceleration = self.get_z_acceleration(self.accelerometer.scaled)
+        self.z_acceleration = self.get_total_accel(self.accelerometer.scaled)
         
     def show_data(self, sampling_rate):
         self.get_data(sampling_rate)
@@ -127,20 +138,18 @@ class MPU6050(Sensor):
 
         print("Z acceleration: ", self.z_acceleration)
 
-    def running_mean(self, data, N):
-        sum = 0
-        result = [0 for x in data]
-
-        for i in range(0, N):
-            sum = sum + data[i]
-            result[i] = sum / (i + 1)
-
-        for i in range(N, len(data)):
-            sum = sum - data[i - N] + data[i]
-            result[i] = sum / N
-
-        return result
-
     def data_pack(self, sampling_rate):
         self.get_data(sampling_rate)
-        return [round(self.xAngle, 1), round(self.yAngle, 1), round(self.zAngle, 1)]
+        return [round(self.angle[0], 1), round(self.angle[1], 1), round(self.angle[2], 1)]
+
+    def running_mean(self, data):
+        self.rm_sum -= self.rm_result[self.rm_input_index]
+        self.rm_result[self.rm_input_index] = data
+        self.rm_sum += self.rm_result[self.rm_input_index]
+        self.rm_input_index = (self.rm_input_index + 1) % self.rm_lenght
+
+        # print("result", self.rm_result)
+        # print("input_index", self.rm_input_index)
+        # print("sum", self.rm_sum)
+
+        return self.rm_sum/self.rm_lenght

@@ -35,13 +35,17 @@ def running_mean(data, N):
 storation_pack_size = 30
 
 time_list = []
+temp_list = []
+pressure_list = []
 altitude = []
 z_vel = []
 last_z_vel_value = 0
 
 df = pd.DataFrame({"altitude": [],
                       "time":  [],
-                      "z_velocity": []})
+                      "z_velocity": [],
+                      "temp_list": [],
+                      "pressure_list": []})
 df.to_csv(r'bme_data.csv')
 
 bme = BME280()
@@ -53,13 +57,19 @@ while 1:
     last_z_vel_value = z_vel[-1]
     df = pd.DataFrame({"time":  time_list,
                       "altitude": altitude,
-                      "z_velocity": z_vel})
+                      "z_velocity": z_vel,
+                      "temperature": temp_list,
+                      "pressure": pressure_list})
     df.to_csv(r'bme_data.csv', mode='a', header=False)
     print("bme_data stored")
     time_list = []
+    temp_list = []
+    pressure_list = []
     altitude = []
     z_vel = []
 
   time_list.append(time.time() - t0)
   bme.get_data()
   altitude.append(running_mean(bme.hight, N))
+  temp_list.append(bme.temperature)
+  pressure_list.append(bme.pressure)

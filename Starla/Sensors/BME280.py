@@ -21,7 +21,7 @@ device = 0x76  # Default device I2C address
 
 
 class BME280(Sensor):
-    def __init__(self):
+    def __init__(self, rm_lenght):
         super().__init__()
 
         self.bus = smbus.SMBus(1)  # Rev 2 Pi, Pi 2 & Pi 3 uses bus 1
@@ -34,6 +34,13 @@ class BME280(Sensor):
         self.hight = 0
         self.chip_id = 0
         self.chip_version = 0
+
+        # Filter
+        # rm = running mean
+        self.rm_lenght = rm_lenght
+        self.rm_sum = 0
+        self.rm_input_index = 0
+        self.rm_result = [0 for _ in range(0, self.rm_lenght)]
 
     def getShort(self, data, index):
         # return two bytes from data as a signed 16-bit value
@@ -140,6 +147,7 @@ class BME280(Sensor):
                   ((temp_raw >> 4) - (dig_T1))) >> 12) * (dig_T3)) >> 14
         t_fine = var1 + var2
         temperature = float(((t_fine * 5) + 128) >> 8)
+        temperature = temperature/100.0
 
         # Refine self.pressure and adjust for self.temperature
         var1 = t_fine / 2.0 - 64000.0
@@ -167,10 +175,9 @@ class BME280(Sensor):
         elif humidity < 0:
             humidity = 0
 
-        hight = ((1013.25/(pressure/100))**(1/5.257)-1) * \
-            (temperature/100+273.15)/0.0065
+        hight = ((101325/(pressure))**(1/5.257)-1) * (temperature + 273.15) / 0.0065
 
-        return temperature / 100.0, pressure / 100.0, humidity, hight
+        return temperature, pressure, humidity, hight
 
     def get_data(self):
         self.temperature, self.pressure, self.humidity, self.hight = self.readBME280All()
@@ -182,7 +189,7 @@ class BME280(Sensor):
         print("----------------")
 
         print("Temperature : ", self.temperature, "C")
-        print("Pressure : ", self.pressure, "hPa")
+        print("Pressure : ", self.pressure, "Pa")
         print("Humidity : ", self.humidity, "%")
         print("Hight : ", self.hight, "m")
 
@@ -190,3 +197,15 @@ class BME280(Sensor):
         self.get_data()
         data = [round(self.temperature, 1), round(self.pressure, 1), round(self.hight, 1)]
         return data
+
+    def running_mean(self, data):
+        self.rm_sum -= self.rm_result[self.rm_input_index]
+        self.rm_result[self.rm_input_index] = data
+        self.rm_sum += self.rm_result[self.rm_input_index]
+        self.rm_input_index = (self.rm_input_index + 1) % self.rm_lenght
+
+        # print("result", self.rm_result)
+        # print("input_index", self.rm_input_index)
+        # print("sum", self.rm_sum)
+
+        return self.rm_sum/self.rm_lenght
