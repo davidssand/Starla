@@ -1,12 +1,12 @@
 import time
 import numpy as np
 import pandas as pd
+import operator
 
 import sys
-sys.path.append("/home/pi/Starla")
-from Sensors.GPS import GPS
-from Sensors.MPU6050 import MPU6050
-from Sensors.BME280 import BME280
+sys.path.append("/home/david/APEX/Starla/Starla")
+
+from Managers.Thread import Thread
 
 # ---------------------------- #
 
@@ -16,13 +16,12 @@ time_list = []
 accel_list = []
 
 altitude = []
+z_vel = []
 last_z_vel_value = 0
-z_vel = np.array([last_z_vel_value])
 
 df = pd.DataFrame({"time":  [],
                   "acceleration": [],
                   "altitude": [],
-                  "time":  [],
                   "z_velocity": []})
 df.to_csv(r'data.csv')
 
@@ -34,6 +33,7 @@ z = 0
 while 1:
   time.sleep(0.0001)
   if len(time_list) >= storation_pack_size:
+    z_vel = np.append(last_z_vel_value, np.diff(altitude))
     last_z_vel_value = z_vel[-1]
     df = pd.DataFrame({"time":  time_list,
                       "acceleration": accel_list,
@@ -44,7 +44,7 @@ while 1:
     time_list = []
     accel_list = []
     altitude = []
-    z_vel = [last_z_vel_value]
+    z_vel = []
 
   time_list.append(time.time() - t0)
 
@@ -54,6 +54,3 @@ while 1:
 
   bme.get_data()
   altitude.append(bme.running_mean(bme.hight))
-
-  z_vel = np.append(z_vel, np.diff([altitude[-2], altitude[-1]))
-  

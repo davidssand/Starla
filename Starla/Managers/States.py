@@ -8,6 +8,7 @@ Created on Thu Jan 29 21:03:57 2019
 import sys
 import numpy as np
 import operator
+import time
 
 sys.path.append("/home/pi/Starla")
 
@@ -119,7 +120,7 @@ def change_checker(validation_variable, valid_value, operator, validation_time):
     time_zero = time.time()
     while time.time() - time_zero < validation_time:
       if operator(valid_value, validation_variable):
-          break
+        break
     else:
       return True
 
