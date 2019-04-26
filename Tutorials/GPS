@@ -1,5 +1,5 @@
 # How to use GPS
-Discover UART por name, mine was ttyAMA0
+Discover UART per name, mine was ttyAMA0
 sudo apt-get install gpsd gpsd-clients
 sudo gpsd /dev/ttyAMA0 -F /var/run/gpsd.sock
 
