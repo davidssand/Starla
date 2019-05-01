@@ -1,25 +1,46 @@
+import threading
+import sys
 import time
+import queue
 import numpy as np
+import pandas as pd
 import operator
+import math
 
-values = [10 for _ in range(0, 1000)] + [10 for _ in (range(1000))]
+def change_checker(valid_value, operator, validation_time):
+  incoming_data = data_to_check.get()
+  if operator(incoming_data, valid_value):
+    print("---- VALID VALUE DETECTED ----\n")
+    time_zero = time.time()
+    while time.time() - time_zero < validation_time:
+      incoming_data = data_to_check.get()
+      print("Incoming data: ", incoming_data)
+      if not operator(incoming_data, valid_value):
+        print("---- DISTURBANCE ----\n")
+        break
+    else:
+      print("Incoming data was valid for: ", time.time() - time_zero)
+      return True
 
-def change_checker(validation_variable, valid_value, operator, validation_time, returned):
+data_to_check = queue.Queue()
+
+def check_change():
   while 1:
-    if operator(validation_variable, valid_value):
-      t0 = time.time()
-      while time.time() - t0 < validation_time:
-        # if time.time() - t0 > 1:
-        #   validation_variable -= 2
-        print(time.time() - t0)
-        if operator(valid_value, validation_variable):
-            break
-      else:
-        return returned()
-  
-def foo():
-  print("funfou")
+    change = False
+    while not change:
+      try:
+        change = change_checker(-0.1, operator.lt, 1)
+      except:
+        print("Some error has occured")
+    print("---- CHANGE STATE ----\n")
+    change = False
 
-m = 6
-t1 = time.time()
-change_checker(m, 5, operator.gt, 2, foo)
+read_thread = threading.Thread(target=check_change, name = "Read and Decide", daemon=True)
+read_thread.start()
+
+x = np.linspace(-10, 10, num=200)
+z_vel = np.sin(x)
+
+for i in z_vel:
+  data_to_check.put(i)
+  time.sleep(0.1)
