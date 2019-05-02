@@ -33,7 +33,6 @@ def check_change():
       except:
         print("Some error has occured")
     print("---- CHANGE STATE ----\n")
-    change = False
 
 read_thread = threading.Thread(target=check_change, name = "Read and Decide", daemon=True)
 read_thread.start()
