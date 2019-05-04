@@ -4,7 +4,7 @@
 #
 # --------------------------------------
 
-# Reading rate -> 5 ms
+# Reading rate ≃ 5 ms
 
 import smbus
 import math

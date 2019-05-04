@@ -7,7 +7,7 @@
 #
 # --------------------------------------
 
-# Reading rate -> 20 ms
+# Reading rate ≃ 20 ms
 
 import smbus
 import time
