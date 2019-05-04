@@ -1,2 +1,3 @@
 # Starla
-Repository for rocket telemetry
+Embedded system for rocket telemetry. 
+Designed to be used in a Raspberry Pi zero W.
