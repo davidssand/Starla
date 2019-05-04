@@ -21,7 +21,7 @@ class Transmitter:
                     timeout=1
                    )
 
-    def send_data(self):
+    def send_data_test(self):
         msg = ""
         msg += str(round(time.time()-t, 2)) + ","
         c = ""
@@ -35,5 +35,16 @@ class Transmitter:
         print(msg + "\n")
         msg = ""
 
-    def sendRescueData(self, delay):
-        pass
+    def send_data(self, data):
+        msg = ""
+        msg += str(round(time.time()-t, 2)) + ","
+        c = ""
+        for i in range(len(MPU6050.dataPackage())):
+            msg += c + str(MPU6050.dataPackage()[i])
+            c = ","
+        for i in range(len(BME280.dataPackage())):
+            msg += c + str(BME280.dataPackage()[i])
+            c = ","
+        self.ser.write(msg)
+        print(msg + "\n")
+        msg = ""

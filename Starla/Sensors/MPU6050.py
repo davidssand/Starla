@@ -1,4 +1,11 @@
-#!/usr/bin/python
+# Author : David Sand
+# Date   : 16/01/2019
+#
+#
+# --------------------------------------
+
+# Reading rate -> 5 ms
+
 import smbus
 import math
 import sys

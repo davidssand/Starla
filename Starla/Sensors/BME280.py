@@ -7,7 +7,8 @@
 #
 # --------------------------------------
 
-from Sensors.Sensor import Sensor
+# Reading rate -> 20 ms
+
 import smbus
 import time
 from ctypes import c_short
@@ -16,6 +17,7 @@ from ctypes import c_ubyte
 import sys
 
 sys.path.append("/home/pi/Starla")
+from Sensors.Sensor import Sensor
 
 device = 0x76  # Default device I2C address
 

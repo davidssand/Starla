@@ -16,17 +16,7 @@ from Sensors.GPS import GPS
 from Sensors.MPU6050 import MPU6050
 from Sensors.BME280 import BME280
 
-from Actuators.Transmitter import Transmitter
 # ---------------------------- #
-
-storation_pack_size = 150
-
-time_list = []
-accel_list = []
-
-altitude = []
-last_z_vel_value = 0
-z_vel = [last_z_vel_value]
 
 data_to_store = queue.Queue()
 data_to_check = queue.Queue()
@@ -61,16 +51,15 @@ def check_change():
 
 def store_data():
   while 1:
-    data_to_check = data_to_store.get()
-    df = pd.DataFrame({"time":  data_to_check["time"],
-                        "acceleration": data_to_check["acceleration"],
-                        "altitude": data_to_check["altitude"],
-                        "z_velocity": data_to_check["z_velocity"]})
+    incoming_data = data_to_store.get()
+    df = pd.DataFrame({"time":  incoming_data["time"],
+                        "acceleration": incoming_data["acceleration"],
+                        "altitude": incoming_data["altitude"],
+                        "z_velocity": incoming_data["z_velocity"]})
     df.to_csv(r'data.csv', mode='a', header=False)
     print("data stored")
 
 # ---------------------------- #
-
 
 storage_thread = threading.Thread(target=store_data, name = "Store data")
 storage_thread.start()
@@ -90,7 +79,7 @@ t0 = time.time()
 # ---------------------------- #
 # Filter
 # rm = running mean
-rm_lenght = 50
+rm_lenght = 60
 rm_sum = 0
 rm_input_index = 0
 rm_result = [0 for _ in range(0, rm_lenght)]
@@ -109,6 +98,15 @@ def running_mean(data):
   return rm_sum/rm_lenght
 
 # ---------------------------- #
+
+storation_pack_size = 150
+
+time_list = []
+accel_list = []
+
+altitude = []
+last_z_vel_value = 0
+z_vel = [last_z_vel_value]
 
 print("System initialized!")
 while 1:
@@ -138,6 +136,7 @@ while 1:
     vel_filtered = running_mean(vel)
     z_vel.append(vel_filtered)
     data_to_check.put(vel_filtered)
+
 
 
 

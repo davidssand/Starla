@@ -16,12 +16,10 @@ from Sensors.GPS import GPS
 from Sensors.MPU6050 import MPU6050
 from Sensors.BME280 import BME280
 
-from Actuators.Transmitter import Transmitter
 # ---------------------------- #
 
 data_to_store = queue.Queue()
 data_to_check = queue.Queue()
-data_to_transmitte = queue.Queue()
 
 # ---------------------------- #
 
@@ -63,21 +61,10 @@ def store_data():
 
 # ---------------------------- #
 
-def transmitte_data():
-  transmitter = Transmitter()
-  while 1:
-    incoming_data = data_to_transmitte.get()
-    transmitter.send_data()
-
-
-
-
 storage_thread = threading.Thread(target=store_data, name = "Store data")
 storage_thread.start()
 read_thread = threading.Thread(target=check_change, name = "Read and Decide")
 read_thread.start()
-transmitte_thread = threading.Thread(target=transmitte_data, name = "Transmitte")
-transmitte_thread.start()
 
 df = pd.DataFrame({"time":  [],
                   "acceleration": [],
@@ -92,7 +79,7 @@ t0 = time.time()
 # ---------------------------- #
 # Filter
 # rm = running mean
-rm_lenght = 50
+rm_lenght = 60
 rm_sum = 0
 rm_input_index = 0
 rm_result = [0 for _ in range(0, rm_lenght)]
@@ -149,10 +136,6 @@ while 1:
     vel_filtered = running_mean(vel)
     z_vel.append(vel_filtered)
     data_to_check.put(vel_filtered)
-  
-  if time_list[-1] > 0.5:
-    package = [time_list
-    data_to_transmitte.put()
 
 
 
