@@ -42,7 +42,10 @@ class BME280(Sensor):
         self.rm_lenght = rm_lenght
         self.rm_sum = 0
         self.rm_input_index = 0
-        self.rm_result = [0 for _ in range(0, self.rm_lenght)]
+
+        # Populating rm with initial value
+        self.get_data()
+        self.rm_result = [self.hight for _ in range(0, self.rm_lenght)]
 
     def getShort(self, data, index):
         # return two bytes from data as a signed 16-bit value
