@@ -8,7 +8,7 @@ class Camera(picamera.PiCamera):
         self.hflip = 180
 
     def startRecording(self):
-        self.start_recording('/home/pi/Starla/CameraData//video.h264')
+        self.start_recording('/home/pi/Starla/CameraData/video.h264')
 
     def stopRecording(self):
         self.stop_recording()

@@ -16,10 +16,17 @@ from Sensors.GPS import GPS
 from Sensors.MPU6050 import MPU6050
 from Sensors.BME280 import BME280
 
+from Actuators.Camera import Camera
+from Actuators.Parachute import Parachute
+
+
 # ---------------------------- #
 
 data_to_store = queue.Queue()
 data_to_check = queue.Queue()
+
+camera = Camera()
+parachute = Parachute()
 
 # ---------------------------- #
 
@@ -39,11 +46,14 @@ def change_checker(valid_value, operator, validation_time):
       return True
 
 def check_change():
+  global camera, parachute
   while 1:
     change = False
     while not change:
       change = change_checker(-0.2, operator.lt, 0.1)
     print("---- CHANGE STATE ----\n")
+    camera.takePicture()
+    parachute.activate()
     time.sleep(3)
     data_to_check.queue.clear()
 
@@ -51,7 +61,7 @@ def check_change():
 
 def store_data():
   # Store data in SD
-  # Storing rate ≃ 100 ms
+  # Takes ≃ 100 ms to store
   while 1:
     incoming_data = data_to_store.get()
     t0 = time.time()
