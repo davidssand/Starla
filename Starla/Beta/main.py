@@ -1,5 +1,4 @@
-print("Initializing system...")
-
+print("Importing libs")
 import threading
 import sys
 import time
@@ -8,7 +7,6 @@ import numpy as np
 import pandas as pd
 import operator
 import math
-
 
 import sys
 sys.path.append("/home/pi/Starla")
@@ -22,6 +20,8 @@ from Actuators.Parachute import Parachute
 # ---------------------------- #
 class Rocket:
   def __init__(self):
+    print("Initializing system...")
+
     self.data_to_store = queue.Queue()
     self.data_to_check = queue.Queue()
 
@@ -106,7 +106,9 @@ class Rocket:
 
     return self.rm_sum/self.rm_lenght
 
-  def decider(self):
+  def main(self):
+    print("System initialized!")
+
     df = pd.DataFrame({"time":  [],
                       "acceleration": [],
                       "altitude": [],
@@ -134,7 +136,7 @@ class Rocket:
     last_sr_value = 0
     sr_list = [last_sr_value]
 
-    print("System initialized!")
+    
     system_time = time.time()
     loop_time = 0
     while 1:
@@ -182,9 +184,3 @@ class Rocket:
         pitch_list = []
         yaw_list = []
         roll_list = []
-
-
-rocket = Rocket()
-rocket.decider()
-
-
