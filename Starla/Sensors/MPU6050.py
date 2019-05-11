@@ -91,12 +91,12 @@ class MPU6050(Sensor):
         self.gyroscope.raw[1] = self.read_word_2c(0x45)
         self.gyroscope.raw[2] = self.read_word_2c(0x47)
 
-        self.gyroscope.scaled = -self.gyroscope.scale(self.gyroscope.raw)
+        self.gyroscope.scaled = self.gyroscope.scale(self.gyroscope.raw)
 
     def get_rotation_rad(self, v):
-        return [math.atan2(v[0], self.dist(v[1], v[2])) - math.pi/2.0,
-         math.atan2(v[1], self.dist(v[0], v[2])) - math.pi/2.0,
-         math.atan2(v[2], self.dist(v[0], v[1])) - math.pi/2.0]
+        return [math.atan2(v[0], self.dist(v[1], v[2])),
+         math.atan2(v[1], self.dist(v[0], v[2])),
+         math.atan2(v[2], self.dist(v[0], v[1]))]
 
         # return [math.atan2(v[i], self.dist(v[i==False], v[2-i//2])) - math.pi for i in range(0, 3)]
 
@@ -117,9 +117,19 @@ class MPU6050(Sensor):
 
         self.accelerometer.angle = self.get_rotation_deg(self.accelerometer.scaled)
         self.gyroscope.angle = self.angle + self.gyroscope.scaled * sampling_rate
-        self.angle = self.filtered_angle(sampling_rate, self.gyroscope.angle, self.accelerometer.angle)     
+        self.angle = self.filtered_angle(sampling_rate, self.gyroscope.angle, self.accelerometer.angle)
+        self.angle = self.angle.tolist()
         
         self.z_acceleration = self.get_total_accel(self.accelerometer.scaled)
+    
+    def get_pitch(self):
+        return self.angle[0]
+
+    def get_yaw(self):
+        return self.angle[1]
+
+    def get_roll(self):
+        return self.angle[2]
         
     def show_data(self, sampling_rate):
         self.get_data(sampling_rate)

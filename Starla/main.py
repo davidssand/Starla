@@ -16,10 +16,17 @@ from Sensors.GPS import GPS
 from Sensors.MPU6050 import MPU6050
 from Sensors.BME280 import BME280
 
+from Actuators.Camera import Camera
+from Actuators.Parachute import Parachute
+
+
 # ---------------------------- #
 
 data_to_store = queue.Queue()
 data_to_check = queue.Queue()
+
+camera = Camera()
+parachute = Parachute()
 
 # ---------------------------- #
 
@@ -39,25 +46,32 @@ def change_checker(valid_value, operator, validation_time):
       return True
 
 def check_change():
+  global camera, parachute
   while 1:
     change = False
     while not change:
       change = change_checker(-0.2, operator.lt, 0.1)
     print("---- CHANGE STATE ----\n")
+    camera.takePicture()
+    parachute.activate()
     time.sleep(3)
     data_to_check.queue.clear()
 
 # ---------------------------- #
 
 def store_data():
+  # Store data in SD
+  # Takes ≃ 100 ms to store
   while 1:
     incoming_data = data_to_store.get()
+    t0 = time.time()
     df = pd.DataFrame({"time":  incoming_data["time"],
                         "acceleration": incoming_data["acceleration"],
                         "altitude": incoming_data["altitude"],
-                        "z_velocity": incoming_data["z_velocity"]})
+                        "z_velocity": incoming_data["z_velocity"],
+                        "sr_list": incoming_data["sr_list"]})
     df.to_csv(r'data.csv', mode='a', header=False)
-    print("data stored")
+    print("data stored, took:", time.time() - t0)
 
 # ---------------------------- #
 
@@ -69,12 +83,12 @@ read_thread.start()
 df = pd.DataFrame({"time":  [],
                   "acceleration": [],
                   "altitude": [],
-                  "z_velocity": []})
+                  "z_velocity": [],
+                  "sr_list": []})
 df.to_csv(r'data.csv')
 
 mpu = MPU6050()
 bme = BME280()
-t0 = time.time()
 
 # ---------------------------- #
 # Filter
@@ -99,7 +113,7 @@ def running_mean(data):
 
 # ---------------------------- #
 
-storation_pack_size = 150
+interval_storage_size = 3
 
 time_list = []
 accel_list = []
@@ -108,22 +122,15 @@ altitude = []
 last_z_vel_value = 0
 z_vel = [last_z_vel_value]
 
-print("System initialized!")
-while 1:
-  time.sleep(0.0001)
-  if len(time_list) >= storation_pack_size:
-    last_z_vel_value = z_vel[-1]
-    package = {"time":  time_list,
-              "acceleration": accel_list,
-              "altitude": altitude,
-              "z_velocity": z_vel}
-    data_to_store.put(package) 
-    time_list = []
-    accel_list = []
-    altitude = []
-    z_vel = [last_z_vel_value]
+# sr -> sampling rate
+last_sr_value = 0
+sr_list = [last_sr_value]
 
-  time_list.append(time.time() - t0)
+print("System initialized!")
+system_time = time.time()
+loop_time = 0
+while 1:
+  time_list.append(time.time() - system_time)
 
   mpu.get_accelerometer_data()
   accel_list.append(mpu.get_total_accel(mpu.accelerometer.scaled))
@@ -136,8 +143,25 @@ while 1:
     vel_filtered = running_mean(vel)
     z_vel.append(vel_filtered)
     data_to_check.put(vel_filtered)
+    sr_list.append(time_list[-1]-time_list[-2])
+  
+  if (time_list[-1] - loop_time) >= interval_storage_size:
 
+    last_sr_value = sr_list[-1]
+    last_z_vel_value = z_vel[-1]
 
+    # resets loop time for entering in this condition again
+    loop_time = time_list[-1]
 
-
-
+    # package sent to storing thread
+    package = {"time":  time_list,
+              "acceleration": accel_list,
+              "altitude": altitude,
+              "z_velocity": z_vel,
+              "sr_list": sr_list}
+    data_to_store.put(package) 
+    time_list = []
+    accel_list = []
+    altitude = []
+    z_vel = [last_z_vel_value]
+    sr_list = [last_sr_value]
