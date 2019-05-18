@@ -1,0 +1,4 @@
+Things that are missing:
+
+X and Y velocities
+Transmission thread

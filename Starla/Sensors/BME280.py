@@ -1,9 +1,5 @@
-#!/usr/bin/python
-
-#
 # Author : David Sand
 # Date   : 16/01/2019
-#
 #
 # --------------------------------------
 
@@ -20,7 +16,6 @@ sys.path.append("/home/pi/Starla")
 from Sensors.Sensor import Sensor
 
 device = 0x76  # Default device I2C address
-
 
 class BME280(Sensor):
     def __init__(self, rm_lenght=50):
@@ -40,12 +35,12 @@ class BME280(Sensor):
         # Filter
         # rm = running mean
         self.rm_lenght = rm_lenght
-        self.rm_sum = 0
         self.rm_input_index = 0
 
         # Populating rm with initial value
         self.get_data()
         self.rm_result = [self.hight for _ in range(0, self.rm_lenght)]
+        self.rm_sum = self.hight * self.rm_lenght
 
     def getShort(self, data, index):
         # return two bytes from data as a signed 16-bit value

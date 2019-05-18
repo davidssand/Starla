@@ -13,7 +13,7 @@ class Camera(picamera.PiCamera):
     def stopRecording(self):
         self.stop_recording()
 
-    def takePicture(self):
+    def take_picture(self):
         self.capture('/home/pi/Starla/CameraData/imag.jpg')
 
 

@@ -5,20 +5,20 @@ import queue
 
 def sleeper():
   while 1:
-    print("Event set by {}".format(threading.current_thread().name))
     if not e.is_set(): 
+      print("Event set by {}".format(threading.current_thread().name))
       e.set()
-    time.sleep(3)
 
 def job():
   while 1:
     e.wait()
-    time.sleep(4)
     print("Event set?", e.is_set())
+    time.sleep(2)
     e.clear()
     print("Event cleared by {}".format(threading.current_thread().name), "\n")
 
 e = threading.Event()
+f = threading.Event()
 
 t1 = threading.Thread(target=sleeper, name = "Thread {}".format(1))
 t2 = threading.Thread(target=job, name = "Thread {}".format(2))
