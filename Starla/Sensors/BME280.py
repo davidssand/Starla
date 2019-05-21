@@ -21,7 +21,7 @@ class BME280(Sensor):
     def __init__(self, rm_lenght=50):
         super().__init__()
 
-        self.bus = smbus.SMBus(1)  
+        self.bus = smbus.SMBus(0)  
 
         self.temperature = 0
         self.pressure = 0
