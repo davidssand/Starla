@@ -7,7 +7,7 @@
 
 import sys
 sys.path.append("/home/pi/Starla")
-from Managers.Rocket import Rocket
+from Managers.rocket import Rocket
 
 try:
   rocket = Rocket()

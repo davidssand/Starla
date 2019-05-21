@@ -14,7 +14,7 @@ from Sensors.GPS import GPS
 from Sensors.MPU6050 import MPU6050
 from Sensors.BME280 import BME280
 
-from Actuators.Camera import Camera
+from Actuators.camera import Camera
 from Actuators.parachute import Parachute
 
 # ---------------------------- #
