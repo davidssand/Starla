@@ -174,7 +174,7 @@ class BME280(Sensor):
             humidity = 0
 
         hight = ((101325/(pressure))**(1/5.257)-1) * (temperature + 273.15) / 0.0065
-
+        
         return temperature, pressure, humidity, hight
 
     def get_data(self):

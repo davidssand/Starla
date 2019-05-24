@@ -17,16 +17,20 @@
 #include <SPI.h>
 
 // bme280
-#include <Adafruit_BMP280.h>
+#include "SparkFunBME280.h"
+float pressure,temp,hight;
+BME280 raw_bme_280;
 
-#define BMP_SCK  (13)
-#define BMP_MISO (12)
-#define BMP_MOSI (11)
-#define BMP_CS   (10)
-
-//Adafruit_BMP280 bmp; // I2C
-//Adafruit_BMP280 bmp(BMP_CS); // hardware SPI
-Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
+//#include <Adafruit_BMP280.h>
+//
+//#define BMP_SCK  (13)
+//#define BMP_MISO (12)
+//#define BMP_MOSI (11)
+//#define BMP_CS   (10)
+//
+////Adafruit_BMP280 bmp; // I2C
+////Adafruit_BMP280 bmp(BMP_CS); // hardware SPI
+//Adafruit_BMP280 bmp(BMP_CS, BMP_MOSI, BMP_MISO,  BMP_SCK);
 
 // SD
 #include <SD.h>
@@ -51,9 +55,12 @@ String dataString = "";
 
 bool valid_value = false;
 
-// Data
+// CSV
 int interval_storage_size = 3;
 const int data_pack_size = 40;
+unsigned int csv_index = 0;
+
+// Data
 int data_pack_index = 0;
 
 float time_list[data_pack_size];
@@ -86,16 +93,21 @@ int bme_rm_input_index = 0;
 unsigned int system_time = 0;
 float t0 = 0;
 
+struct bme_sensor{
+  float pressure;
+  float temp;
+  float hight;
+};
+
+bme_sensor bme_280 = {0, 0, 0};
+
 // --- Setup --- //
 
-void setup() {
-  digitalWrite(BMP_CS, HIGH);
-  
+void setup() {  
   Serial.begin(9600);
+  Wire.begin();
 
   setup_bmp280();
-  Serial.print("Primeira leitura bme: ");
-  Serial.println(bmp.readAltitude(1013.25));
   
   parachute_servos.attach(9);
 
@@ -107,10 +119,7 @@ void setup() {
     ;
   }
 
-  iniciate_csv_file();
-
-  Serial.print("Segunda leitura bme: ");
-  Serial.println(bmp.readAltitude(1013.25));
+//  iniciate_csv_file();
 
   system_time = millis();
 }
@@ -118,30 +127,40 @@ void setup() {
 // --- Loop --- //
 
 void loop() {
-  Serial.println(bmp.readAltitude(1013.25));
-  store_data();
+  populate_data_arrays();
+  for(int i = 0; i < data_pack_size; i++){
+    Serial.print(altitude_list[i]);
+  }
+  Serial.println();
   data_pack_index++;
-  delay(1000);
-  if((millis() - system_time) > 5000){
-    read_txt();
-    while(1){
-      ;
-    }
+//  delay(1000);
+//  if((millis() - system_time) > 5000){
+//    read_txt();
+//    while(1){
+//      ;
+//    }
+//  }
+  if(data_pack_index == 40){
+    store_data();
+    data_pack_index = 0;
   }
 }
 
 void setup_bmp280(){
-  if (!bmp.begin()) {
-    Serial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
-    while (1);
-  }
-
-  /* Default settings from datasheet. */
-  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
-                  Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
-                  Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
-                  Adafruit_BMP280::FILTER_X16,      /* Filtering. */
-                  Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
+  raw_bme_280.setI2CAddress(0x76); //Connect to a second sensor
+  if(raw_bme_280.beginI2C() == false) Serial.println("Sensor B connect failed");
+  
+//  if (!bmp.begin()) {
+//    Serial.println(F("Could not find a valid BMP280 sensor, check wiring!"));
+//    while (1);
+//  }
+//
+//  /* Default settings from datasheet. */
+//  bmp.setSampling(Adafruit_BMP280::MODE_NORMAL,     /* Operating Mode. */
+//                  Adafruit_BMP280::SAMPLING_X2,     /* Temp. oversampling */
+//                  Adafruit_BMP280::SAMPLING_X16,    /* Pressure oversampling */
+//                  Adafruit_BMP280::FILTER_X16,      /* Filtering. */
+//                  Adafruit_BMP280::STANDBY_MS_500); /* Standby time. */
 }
 
 void populate_data_arrays(){
@@ -151,12 +170,16 @@ void populate_data_arrays(){
   
   // # --------------- #
 
+  bme_280.pressure = raw_bme_280.readFloatPressure();
+  bme_280.temp = (raw_bme_280.readTempF() - 32.0) * 5/9;
+  bme_280.hight = pow((101325/bme_280.pressure),((1/5.257)-1)) * (bme_280.temp) ;
+
 //  time_list[data_pack_index] = millis() - system_time;
 //  accel_list[data_pack_index] = (mpu.get_total_accel(self.mpu.accelerometer.scaled));
 //  pitch_list[data_pack_index] = (mpu.angle[0]);
 //  yaw_list[data_pack_index] = (mpu.angle[1]);
 //  roll_list[data_pack_index] = (mpu.angle[2]);
-//  altitude_list[data_pack_index] = (bme_running_mean(self.bme.hight));
+  altitude_list[data_pack_index] = (bme_280.hight);
 }
 
 void iniciate_csv_file(){
@@ -186,13 +209,15 @@ void iniciate_csv_file(){
 float store_data(){
   // --- SD --- //
   myFile = SD.open("test.txt", FILE_WRITE);
-  myFile.print(data_pack_index);
+  myFile.print(csv_index);
   if (myFile) {
-    for(int i = 0; i < columns_length; i++){
-      myFile.print("," + String(bmp.readAltitude(1013.25)));
-    }
+    myFile.print(csv_index);
+//    for(int i = 0; i < columns_length; i++){
+//      myFile.print("," + String(bmp.readAltitude(1013.25)));
+//    }
     myFile.println("");
     myFile.close();
+    csv_index++;
   } else {
     Serial.println("error opening test.txt");
   }
