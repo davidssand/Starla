@@ -102,6 +102,21 @@ void loop() {
   }
 }
 
+void populate_data_arrays(){
+  // # --------------- #
+
+  // # Puts read data in corresponding arrays
+  
+  // # --------------- #
+
+//  time_list[data_pack_index] = millis() - system_time;
+//  accel_list[data_pack_index] = (mpu.get_total_accel(self.mpu.accelerometer.scaled));
+//  pitch_list[data_pack_index] = (mpu.angle[0]);
+//  yaw_list[data_pack_index] = (mpu.angle[1]);
+//  roll_list[data_pack_index] = (mpu.angle[2]);
+//  altitude_list[data_pack_index] = (bme.running_mean(self.bme.hight));
+}
+
 void iniciate_csv_file(){
   Serial.print("Initializing SD card...");
 
@@ -109,7 +124,7 @@ void iniciate_csv_file(){
     Serial.println("initialization failed!");
     while (1);
   }
-  SD.remove("test.txt");
+//  SD.remove("test.txt");
   Serial.println("initialization done.");
 
   myFile = SD.open("test.txt", FILE_WRITE);
@@ -156,4 +171,56 @@ void read_txt(){
     // if the file didn't open, print an error:
     Serial.println("error opening test.txt");
   }
+}
+
+void check_change(){
+    // # --------------- #
+
+    // # Decides
+
+    // # --------------- #
+
+    inst_z_vel = (altitude_list[data_pack_index] - altitude_list[data_pack_index - 1])/
+      (time_list[data_pack_index] - time_list[data_pack_index - 1]);
+    vel_filtered = running_mean(inst_z_vel);
+    change_checker(vel_filtered);
+
+    z_velocity_list[data_pack_index] = vel_filtered;
+    sr_list[data_pack_index] = time_list[data_pack_index] - time_list[data_pack_index - 1];
+}
+
+void change_checker(float z_velocity){
+  valid_value = z_velocity < 0.2;
+  if(z_velocity < 0.2 and !valid_value) t0 = millis();
+  if(millis() - t0 > 1000 && valid_value) open_parachute();
+}
+
+void open_parachute(){
+  for (parachute_servos_pos = 0; parachute_servos_pos <= 180; parachute_servos_pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    parachute_servos.write(parachute_servos_pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+  for (parachute_servos_pos = 180; parachute_servos_pos >= 0; parachute_servos_pos -= 1) { // goes from 180 degrees to 0 degrees
+    parachute_servos.write(parachute_servos_pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+}
+
+float running_mean(float data){
+//  # --------------- #
+//
+//  # Running mean for velocity
+//
+//  # --------------- #
+  rm_sum -= rm_result[rm_input_index];
+  rm_result[rm_input_index] = data;
+  rm_sum += rm_result[rm_input_index];
+  rm_input_index = (rm_input_index + 1) % rm_lenght;
+
+//  Serial.print("result", rm_result);
+//  Serial.print("input_index", rm_input_index);
+//  Serial.print("sum", rm_sum);
+
+  return rm_sum/rm_lenght;
 }

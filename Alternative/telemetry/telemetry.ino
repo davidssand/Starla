@@ -5,7 +5,6 @@
  to an SD card using the SD library.
 
  The circuit:
- * analog sensors on analog ins 0, 1, and 2
  * SD card attached to SPI bus as follows:
  ** MOSI - pin 11
  ** MISO - pin 12
@@ -23,10 +22,22 @@
 #include <SPI.h>
 #include <SD.h>
 
-const int chipSelect = 4;
+#include <Servo.h>
+
+Servo parachute_servos;
+
+int parachute_servos_pos = 0;
+
+// SD
+File myFile;
+const int columns_length = 2;
+String columns[columns_length] = {"Coluna1", "Coluna2"};
+
 float t0 = 0;
 
 float z_velocity = 0;
+float inst_z_vel = 0;
+float vel_filtered = 0;
 
 // make a string for assembling the data to log:
 String dataString = "";
@@ -35,8 +46,8 @@ bool valid_value = false;
 
 // Data
 int interval_storage_size = 3;
-const int data_pack_size = 100;
-const int data_pack_index = 0;
+const int data_pack_size = 40;
+int data_pack_index = 0;
 
 float time_list[data_pack_size];
 
@@ -59,66 +70,67 @@ const int rm_lenght = 60;
 float rm_result[rm_lenght];
 int rm_input_index = 0;
 
+// Time variables 
+unsigned int system_time = 0;
+
+//void setup(){}
+//void loop(){}
+
+// --- Setup --- //
+
 void setup() {
+  Serial.begin(9600); 
+  parachute_servos.attach(9);
+
   for (int i = 0; i < rm_lenght; i++){
     rm_result[i] = 0;
   }
   
-  Serial.begin(9600);
+  // Open serial communications and wait for port to open:
   while (!Serial) {
-    ; 
+    ; // wait for serial port to connect. Needed for native USB port only
   }
+
 
   Serial.print("Initializing SD card...");
 
-  // see if the card is present and can be initialized:
-  if (!SD.begin(chipSelect)) {
-    Serial.println("Card failed, or not present");
-    // don't do anything more:
-    return;
+  if (!SD.begin(4)) {
+    Serial.println("initialization failed!");
+    while (1);
   }
-  Serial.println("card initialized.");
-}
-
-void loop() {
-  populate_data_arrays()
-
-  z_velocity = (altitude_list[data_pack_index] - altitude_list[data_pack_index-1])/
-    (time_list[data_pack_index] - time_list[data_pack_index-1])
-
-  if(z_velocity < 0.2 and valid_value == false){
-    t0 = millis();
-    valid_value = true;
-  }
-  if(millis() - t0 > 1000 && valid_value == true){
-    valid_value = false;
-    open_parachute();
-  }
-
-  // read three sensors and append to the string:
-  for (int analogPin = 0; analogPin < 3; analogPin++) {
-    int sensor = analogRead(analogPin);
-    dataString += String(sensor);
-    if (analogPin < 2) {
-      dataString += ",";
-    }
-  }
+  Serial.println("initialization done.");
 
   // open the file. note that only one file can be open at a time,
   // so you have to close this one before opening another.
-  File dataFile = SD.open("datalog.txt", FILE_WRITE);
+  myFile = SD.open("flight_data.txt", FILE_WRITE);
 
-  // if the file is available, write to it:
-  if (dataFile) {
-    dataFile.println(dataString);
-    dataFile.close();
-    // print to the serial port too:
-    Serial.println(dataString);
+  // if the file opened okay, write to it:
+  if (myFile) {
+    Serial.print("Writing to test.txt...");
+    myFile.println("testing 1, 2, 3.");
+    // close the file:
+    myFile.close();
+    Serial.println("done.");
+  } else {
+    // if the file didn't open, print an error:
+    Serial.println("aaaaaaaaaaa");
+    Serial.println("error opening test.txt");
   }
-  // if the file isn't open, pop up an error:
-  else {
-    Serial.println("error opening datalog.txt");
-  }
+
+  system_time = millis();
+}
+
+// --- Loop --- //
+
+void loop() {
+  // populate_data_arrays();
+
+  // check_change();
+  
+  store_data();
+  delay(1000);
+
+  data_pack_index++;
 }
 
 float running_mean(float data){
@@ -140,7 +152,15 @@ float running_mean(float data){
 }
 
 void open_parachute(){
-  ;
+  for (parachute_servos_pos = 0; parachute_servos_pos <= 180; parachute_servos_pos += 1) { // goes from 0 degrees to 180 degrees
+    // in steps of 1 degree
+    parachute_servos.write(parachute_servos_pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
+  for (parachute_servos_pos = 180; parachute_servos_pos >= 0; parachute_servos_pos -= 1) { // goes from 180 degrees to 0 degrees
+    parachute_servos.write(parachute_servos_pos);              // tell servo to go to position in variable 'pos'
+    delay(15);                       // waits 15ms for the servo to reach the position
+  }
 }
 
 void populate_data_arrays(){
@@ -150,40 +170,72 @@ void populate_data_arrays(){
   
   // # --------------- #
 
-  mpu.get_data(0.03)
-  bme.get_data()
-
-  time_list[data_pack_index] = (millis() - system_time)
-  accel_list.[data_pack_index] = (mpu.get_total_accel(self.mpu.accelerometer.scaled))
-  pitch_list[data_pack_index] = (mpu.angle[0])
-  yaw_list[data_pack_index] = (mpu.angle[1])
-  roll_list[data_pack_index] = (mpu.angle[2])
-  altitude_list[data_pack_index] = (bme.running_mean(self.bme.hight))
-  
-  data_pack_index++
+//  time_list[data_pack_index] = millis() - system_time;
+//  accel_list[data_pack_index] = (mpu.get_total_accel(self.mpu.accelerometer.scaled));
+//  pitch_list[data_pack_index] = (mpu.angle[0]);
+//  yaw_list[data_pack_index] = (mpu.angle[1]);
+//  roll_list[data_pack_index] = (mpu.angle[2]);
+//  altitude_list[data_pack_index] = (bme.running_mean(self.bme.hight));
 }
 
-void pack_decision_data(){
-    // # --------------- #
+void iniciate_csv_file(){
+  // --- SD --- //
+  myFile = SD.open("flight_data.txt", FILE_WRITE);
 
-    // # Gathers all data in a package for decision_thread
-
-    // # --------------- #
-
-    // vel = (self.altitude_list[-1] - self.altitude_list[-2])/(self.time_list[-1] - self.time_list[-2])
-    // vel_filtered = self.running_mean(vel)
-    // self.z_velocity_list.append(vel_filtered)
-    // self.data_to_check.put(vel_filtered)
-    // self.sr_list.append(self.time_list[-1]-self.time_list[-2])
+  if (myFile) {
+    for(int i = 0; i < columns_length; i++){
+      myFile.print("," + columns[i]);
+    }
+    myFile.println("");
+    myFile.close();
+    Serial.println("SD initialized");
+  } else {
+    Serial.println("error opening test.txt");
+  }
+  // ---  --- //
 }
 
+float store_data(){
+  // --- SD --- //
+  myFile = SD.open("flight_data.txt", FILE_WRITE);
 
+  if (myFile) {
+     myFile.print(String(data_pack_index));
+    for(int i = 0; i < columns_length; i++){
+      myFile.print("," + String(1));
+    }
+    myFile.println("");
+    myFile.close();
+    Serial.println("done");
+  } else {
+    Serial.println("error opening test.txt");
+  }
+  // ---  --- //
+}
 
+void check_change(){
+    // # --------------- #
 
+    // # Decides
 
+    // # --------------- #
 
+    inst_z_vel = (altitude_list[data_pack_index] - altitude_list[data_pack_index - 1])/
+      (time_list[data_pack_index] - time_list[data_pack_index - 1]);
+    vel_filtered = running_mean(inst_z_vel);
+    change_checker(vel_filtered);
 
+    z_velocity_list[data_pack_index] = vel_filtered;
+    sr_list[data_pack_index] = time_list[data_pack_index] - time_list[data_pack_index - 1];
+}
 
-
-
-
+void change_checker(float z_velocity){
+  if(z_velocity < 0.2 and valid_value == false){
+    t0 = millis();
+    valid_value = true;
+  }
+  if(millis() - t0 > 1000 && valid_value == true){
+    valid_value = false;
+    open_parachute();
+  }
+}
