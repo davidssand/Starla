@@ -32,10 +32,10 @@ BME280 mySensorB; //Uses I2C address 0x76 (jumper closed)
 struct bme_sensor{
   float pressure;
   float temp;
-  float hight = pow((101325/pressure),((1/5.257)-1)) * (temp);
+  float hight;
 };
 
-bme_sensor bme280 = {0, 0};
+bme_sensor bme280 = {0, 0, 0};
 
 void setup()
 {
@@ -50,19 +50,17 @@ void loop()
 {
   bme280.pressure = mySensorB.readFloatPressure();
   bme280.temp = (mySensorB.readTempF() - 32.0) * 5/9;
-  bm/e280.hight = pow((101325/bme280.pressure),((1/5.257)-1)) * (bme280.temp) ;
+  bme280.hight = (pow((101325/bme280.pressure),(1/5.257))-1) * (bme280.temp + 273)/0.0065 ;
 
   Serial.print(" PressureB: ");
   Serial.print(bme280.pressure);
 
   Serial.print(" TempB: ");
-  //Serial.print(mySensorB.readTempC(), 2);
   Serial.print(bme280.temp, 2);
 
   Serial.print(" Altura : ");
   Serial.print(bme280.hight);
   
   Serial.println();
-
   delay(50);
 }
