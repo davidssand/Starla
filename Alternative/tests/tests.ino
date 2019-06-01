@@ -1,8 +1,11 @@
-char a = 'adc';
+
 void setup() {
-  Serial.begin(9600);
-}
+  
+ }
 
 void loop() {
-  Serial.print(a);
+//  analogWrite(A2, 1023);
+  delay(500);
+  analogWrite(A2, 0);
+  delay(500);
 }
