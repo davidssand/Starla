@@ -136,7 +136,6 @@ void change_checker(float z_velocity) {
     valid_value_detection_time = millis();
     open_parachute();
     after_fall();
-    
   }
 }
 

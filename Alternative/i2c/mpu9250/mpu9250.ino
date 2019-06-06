@@ -7,15 +7,12 @@ void setup()
 {
   Serial.begin(9600);
 
-  if (imu.begin() != INV_SUCCESS)
+  while (imu.begin() != INV_SUCCESS)
   {
-    while (1)
-    {
-      Serial.println(F("Unable to communicate with MPU-9250"));
-      Serial.println(F("Check connections, and try again."));
-      Serial.println();
-      delay(1000);
-    }
+    Serial.println(F("Unable to communicate with MPU-9250"));
+    Serial.println(F("Check connections, and try again."));
+    Serial.println();
+    delay(1000);
   }
 
   imu.setSensors(INV_XYZ_GYRO | INV_XYZ_ACCEL | INV_XYZ_COMPASS);
@@ -23,8 +20,6 @@ void setup()
   imu.setAccelFSR(2); // Set accel to +/-2g
   imu.setLPF(42); // Set LPF corner frequency to 5Hz
   imu.setSampleRate(10); // Set sample rate to 10Hz
-
-
 }
 
 void loop() 

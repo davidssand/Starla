@@ -37,22 +37,23 @@ Servo servo1;
 Servo servo2;
 
 bool valid_value = false;
+bool apogee = false;
 
 // CSV
-unsigned int csv_index = 0;
+unsigned long int csv_index = 0;
 
 // Running mean
 float bme_rm_mean = 0.0;
-int bme_rm_length = 30;
+const int bme_rm_length = 30;
 
 float velocity_rm_mean = 0.0;
-int velocity_rm_length = 30;
+const int velocity_rm_length = 30;
 
 // Time variables
-unsigned long system_time = 0;
-unsigned int apooge_time = 0;
-unsigned int valid_value_detection_time = 0;
-unsigned long current_time = 0;
+unsigned long int system_time = 0;
+unsigned long int apooge_time = 0;
+unsigned long int valid_value_detection_time = 0;
+unsigned long int current_time = 0;
 
 struct bme_sensor {
   float pressure;
@@ -81,12 +82,6 @@ bme_sensor bme_280 = {0, 0, 0, 0, 0};
 velocimeter velocimeter = {0, 0};
 
 void setup() {
-  // Open serial communications and wait for port to open:
-  Serial.begin(9600);
-  while (!Serial) {
-    buzz(5, 100); 
-  }
-
   pinMode(A2, OUTPUT);
 
   iniciate_csv_file();
@@ -104,27 +99,18 @@ void setup() {
   delay(100);
 }
 
-void loop() {
-//  Serial.print(velocimeter.z_velocity);
-//  Serial.print(" ");
-//  Serial.println(velocimeter.filtered_z_velocity);
-  
+void loop() {  
   populate_variables();
-  
-  data_to_store[0] = current_time;
-  data_to_store[1] = bme_280.pressure;
-  data_to_store[2] = bme_280.temp;
-  data_to_store[3] = bme_280.height;
-  data_to_store[4] = velocimeter.z_velocity;
-  data_to_store[5] = mpu_9250.accelX;
-  data_to_store[6] = mpu_9250.accelY;
-  data_to_store[7] = mpu_9250.accelZ;
-  data_to_store[8] = mpu_9250.gyroX;
-  data_to_store[9] = mpu_9250.gyroY;
-  data_to_store[10] = mpu_9250.gyroZ;
-
-  store_data(data_to_store);
-  change_checker(velocimeter.filtered_z_velocity);
+  storer();
+  if(!apogee) change_checker(velocimeter.filtered_z_velocity);
+  else{
+    if((millis() - apooge_time) > 2000) detach_servos();
+    if((millis() - apooge_time) > 15000){
+      while(1){
+        rescue();
+      }
+    }
+  }
 }
 
 void change_checker(float z_velocity) {
@@ -135,15 +121,12 @@ void change_checker(float z_velocity) {
   if (millis() - valid_value_detection_time > 500) {
     valid_value_detection_time = millis();
     open_parachute();
-    after_fall();
-    
+    apooge_time = millis();
+    apogee = true;
   }
 }
 
-void after_fall(){
+void rescue(){
+  buzz(3, 100);
   delay(1000);
-  detach_servos();
-  delay(5000);
-  buzz(1, 400);
-  while(1);
 }

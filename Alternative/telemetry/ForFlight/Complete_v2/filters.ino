@@ -4,8 +4,6 @@ float bme_rm(float data){
 }
 
 float velocity_rm(float data){
-    
     velocity_rm_mean = (velocity_rm_mean * velocity_rm_length + data)/(velocity_rm_length + 1);
-
     return velocity_rm_mean;
 }

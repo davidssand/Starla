@@ -1,13 +1,28 @@
+void storer(){
+  data_to_store[0] = current_time;
+  data_to_store[1] = bme_280.pressure;
+  data_to_store[2] = bme_280.temp;
+  data_to_store[3] = bme_280.height;
+  data_to_store[4] = velocimeter.z_velocity;
+  data_to_store[5] = mpu_9250.accelX;
+  data_to_store[6] = mpu_9250.accelY;
+  data_to_store[7] = mpu_9250.accelZ;
+  data_to_store[8] = mpu_9250.gyroX;
+  data_to_store[9] = mpu_9250.gyroY;
+  data_to_store[10] = mpu_9250.gyroZ;
+
+  store_data(data_to_store);
+}
 
 void iniciate_csv_file() {
   while (!SD.begin(4)) {
-    buzz(2, 300);
+    buzz(5, 300);
   }
 
-  buzz(1, 100);
+  buzz(3, 200);
   
   // Remove before flight ----------------------------------------
-  SD.remove("test.txt");
+//  SD.remove("test.txt");
   // -------------------------------------------------------------
 }
 
@@ -24,7 +39,7 @@ float store_data(float data[data_to_store_length]) {
     myFile.close();
     csv_index++;
   } else {
-      buzz(1, 100);
+      buzz(2, 100);
   }
   // ---  --- //
 }
