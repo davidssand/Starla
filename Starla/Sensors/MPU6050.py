@@ -22,7 +22,7 @@ class MPU6050(Sensor):
         self.power_mgmt_1 = 0x6b
         self.power_mgmt_2 = 0x6c
 
-        self.bus = smbus.SMBus(0)
+        self.bus = smbus.SMBus(1)
         self.address = 0x68  # via i2cdetect
 
         # Ativacao
