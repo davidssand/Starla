@@ -91,7 +91,7 @@ while 1:
   accel_list.append(mpu.get_total_accel(mpu.accelerometer.scaled))
 
   bme.get_data()
-  altitude.append(bme.running_mean(bme.hight))
+  altitude.append(bme.running_mean(bme.height))
 
   if len(time_list) > 1:
     vel = (altitude[-1] - altitude[-2])/(time_list[-1] - time_list[-2])

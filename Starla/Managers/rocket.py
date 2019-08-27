@@ -214,7 +214,7 @@ class Rocket:
     self.pitch_list.append(self.mpu.angle[0])
     self.yaw_list.append(self.mpu.angle[1])
     self.roll_list.append(self.mpu.angle[2])
-    self.altitude_list.append(self.bme.running_mean(self.bme.hight))
+    self.altitude_list.append(self.bme.running_mean(self.bme.height))
 
   def initialize_csv_file(self):
     # --------------- #

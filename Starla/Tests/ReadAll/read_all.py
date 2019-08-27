@@ -28,7 +28,7 @@ while 1:
   
 
 bme.get_data()
-altitude.append(bme.running_mean(bme.hight))
+altitude.append(bme.running_mean(bme.height))
 
 
 
