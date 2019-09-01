@@ -27,6 +27,7 @@ class BME280(Sensor):
         self.pressure = 0
         self.humidity = 0
         self.height = 0
+        self.status = True
 
         # Filter
         # rm = running mean
@@ -37,14 +38,24 @@ class BME280(Sensor):
         self.get_data()
         self.rm_result = [self.height for _ in range(0, self.rm_lenght)]
         self.rm_sum = self.height * self.rm_lenght
+    
+    def read_data(self):
+        try:
+            bme280_data = bme280.sample(self.bus, self.device)
+            humidity  = bme280_data.humidity
+            pressure  = bme280_data.pressure
+            temperature = bme280_data.temperature
+            height = ((1024/pressure)**(1/5.257) - 1) * (temperature + 273.15) / 0.0065
+            return {"humidity": humidity, "pressure": pressure, "temperature": temperature, "height": height, "status": True}
+        except:
+            return {"humidity": self.humidity, "pressure": self.pressure, "temperature": self.temperature, "height": self.height, "status": False}
 
     def get_data(self):
-        bme280_data = bme280.sample(self.bus, self.device)
-        self.humidity  = bme280_data.humidity
-        self.pressure  = bme280_data.pressure
-        self.temperature = bme280_data.temperature
-
-        self.height = ((1024/self.pressure)**(1/5.257) - 1) * (self.temperature + 273.15) / 0.0065
+        self.humidity = self.read_data()["humidity"]
+        self.pressure = self.read_data()["pressure"]
+        self.temperature = self.read_data()["temperature"]
+        self.height = self.read_data()["height"]
+        self.status = self.read_data()["status"]
 
     def show_data(self):
         self.get_data()
