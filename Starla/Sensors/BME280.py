@@ -38,7 +38,7 @@ class BME280(Sensor):
         self.rm_result = [self.height for _ in range(0, self.rm_lenght)]
         self.rm_sum = self.height * self.rm_lenght
 
-    def readBME280All(self):
+    def get_data(self):
         bme280_data = bme280.sample(self.bus, self.device)
         self.humidity  = bme280_data.humidity
         self.pressure  = bme280_data.pressure
@@ -47,7 +47,7 @@ class BME280(Sensor):
         self.height = ((1024/self.pressure)**(1/5.257) - 1) * (self.temperature + 273.15) / 0.0065
 
     def show_data(self):
-        self.readBME280All()
+        self.get_data()
 
         print("BME280")
         print("----------------")

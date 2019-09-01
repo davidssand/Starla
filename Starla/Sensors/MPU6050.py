@@ -79,9 +79,9 @@ class MPU6050(Sensor):
         return math.sqrt((a * a) + (b * b))
 
     def get_accelerometer_data(self):
-        self.accelerometer.raw[0] = self.read_word_2c(0x3b)
-        self.accelerometer.raw[1] = self.read_word_2c(0x3d)
-        self.accelerometer.raw[2] = self.read_word_2c(0x3f)
+        self.accelerometer.raw[0] = self.read_word_2c(0x3b) # x
+        self.accelerometer.raw[1] = self.read_word_2c(0x3d) # y
+        self.accelerometer.raw[2] = self.read_word_2c(0x3f) # z
 
         self.accelerometer.scaled = self.accelerometer.scale(self.accelerometer.raw)
     
@@ -93,9 +93,11 @@ class MPU6050(Sensor):
         self.gyroscope.scaled = self.gyroscope.scale(self.gyroscope.raw)
 
     def get_rotation_rad(self, v):
-        return [math.atan2(v[0], self.dist(v[1], v[2])),
-         math.atan2(v[1], self.dist(v[0], v[2])),
-         math.atan2(v[2], self.dist(v[0], v[1]))]
+        return [
+            math.atan2(v[0], self.dist(v[1], v[2])),
+            math.atan2(v[1], self.dist(v[0], v[2])),
+            math.atan2(v[2], self.dist(v[0], v[1]))
+        ]
 
         # return [math.atan2(v[i], self.dist(v[i==False], v[2-i//2])) - math.pi for i in range(0, 3)]
 

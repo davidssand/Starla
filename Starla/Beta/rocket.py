@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import operator
 import math
+import RPi.GPIO as GPIO
 
 import os
 import sys
@@ -30,6 +31,8 @@ class Rocket:
     self.data_to_store = queue.Queue()
     self.data_to_check = queue.Queue()
 
+    self.collected_data_path = "/home/pi/Starla/CollectedData/"
+
     # self.camera = Camera()
     # self.parachute = Parachute()
     self.buzzer = Buzzer(12)
@@ -43,9 +46,9 @@ class Rocket:
     self.time_list = []
 
     self.accel_list = []
-    self.pitch_list = []
-    self.yaw_list = []
-    self.roll_list = []
+    self.x_list = []
+    self.y_list = []
+    self.z_list = []
 
     self.altitude_list = []
     self.last_z_vel_value = 0
@@ -110,7 +113,7 @@ class Rocket:
     while 1:
       change = False
       while not change:
-        change = self.change_checker(-1, operator.lt, 2)
+        change = self.change_checker(-0.3, operator.lt, 0.3)
       print("---- CHANGE STATE ----\n")
       # self.camera.take_picture()
       # self.parachute.activate_parachute()
@@ -136,11 +139,12 @@ class Rocket:
                           "acceleration_list": incoming_data["acceleration_list"],
                           "altitude_list": incoming_data["altitude_list"],
                           "z_velocity_list": incoming_data["z_velocity_list"],
-                          "pitch_list": incoming_data["pitch_list"],
-                          "yaw_list": incoming_data["yaw_list"],
-                          "roll_list": incoming_data["roll_list"],
+                          "x_list": incoming_data["x_list"],
+                          "y_list": incoming_data["y_list"],
+                          "z_list": incoming_data["z_list"],
                           "sr_list": incoming_data["sr_list"]})
-      df.to_csv(r'/home/pi/Starla/data.csv', mode='a', header=False)
+      path = self.collected_data_path + "data.csv"
+      df.to_csv(path, mode='a', header=False)
       print("data stored, took:", time.time() - t0)
 
   def running_mean(self, data):
@@ -175,9 +179,9 @@ class Rocket:
               "acceleration_list": self.accel_list,
               "altitude_list": self.altitude_list,
               "z_velocity_list": self.z_velocity_list,
-              "pitch_list": self.pitch_list,
-              "yaw_list": self.yaw_list,
-              "roll_list": self.roll_list,
+              "x_list": self.x_list,
+              "y_list": self.y_list,
+              "z_list": self.z_list,
               "sr_list": self.sr_list}
     self.data_to_store.put(package) 
     self.time_list = []
@@ -185,9 +189,9 @@ class Rocket:
     self.altitude_list = []
     self.z_velocity_list = [self.last_z_vel_value]
     self.sr_list = [self.last_sr_value]
-    self.pitch_list = []
-    self.yaw_list = []
-    self.roll_list = []
+    self.x_list = []
+    self.y_list = []
+    self.z_list = []
   
   def pack_decision_data(self):
     # --------------- #
@@ -214,9 +218,9 @@ class Rocket:
 
     self.time_list.append(time.time() - self.system_time)
     self.accel_list.append(self.mpu.get_total_accel(self.mpu.accelerometer.scaled))
-    self.pitch_list.append(self.mpu.angle[0])
-    self.yaw_list.append(self.mpu.angle[1])
-    self.roll_list.append(self.mpu.angle[2])
+    self.x_list.append(self.mpu.accelerometer.scaled[0])
+    self.y_list.append(self.mpu.accelerometer.scaled[1])
+    self.z_list.append(self.mpu.accelerometer.scaled[2])
     self.altitude_list.append(self.bme.running_mean(self.bme.height))
 
   def initialize_csv_file(self):
@@ -230,11 +234,13 @@ class Rocket:
                       "acceleration_list": [],
                       "altitude_list": [],
                       "z_velocity_list": [],
-                      "pitch_list": [],
-                      "yaw_list": [],
-                      "roll_list": [],
+                      "x_list": [],
+                      "y_list": [],
+                      "z_list": [],
                       "sr_list": []})
-    df.to_csv(r'/home/pi/Starla/data.csv')
+
+    path = self.collected_data_path + "data.csv"
+    df.to_csv(path)
 
   def wait_start_command(self):
     while not self.button.pushed():
@@ -272,5 +278,5 @@ class Rocket:
         self.pack_store_data()
 
     print("System terminated!")
-    # self.parachute.gpio.cleanup()
+    GPIO.cleanup()
     self.buzzer.beep(1)
