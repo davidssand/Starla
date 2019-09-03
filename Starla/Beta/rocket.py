@@ -45,7 +45,6 @@ class Rocket:
 
     self.time_list = []
 
-    self.accel_list = []
     self.x_list = []
     self.y_list = []
     self.z_list = []
@@ -53,6 +52,9 @@ class Rocket:
     self.altitude_list = []
     self.last_z_vel_value = 0
     self.z_velocity_list = [self.last_z_vel_value]
+
+    self.bme_status = []
+    self.mpu_status = []
 
     # sr -> sampling rate
     self.last_sr_value = 0
@@ -119,7 +121,7 @@ class Rocket:
       # self.parachute.activate_parachute()
 
       #### For tests ####
-      # time.sleep(3)
+      time.sleep(3)
       # self.camera.stopRecording()
       # self.parachute.deactivate_servo()
       self.data_to_check.queue.clear()
@@ -135,14 +137,25 @@ class Rocket:
     while 1:
       incoming_data = self.data_to_store.get()
       t0 = time.time()
+
+      print("\nstore")
+      print("alt", len(incoming_data["altitude_list"]))
+      print("mpu_status", len(incoming_data["mpu_status"]))
+      print("bme_status", len(incoming_data["bme_status"]))
+      print("alt", len(incoming_data["altitude_list"]))
+      print("mpu_status", len(incoming_data["mpu_status"]))
+      print("bme_status", len(incoming_data["bme_status"]))
+
       df = pd.DataFrame({"time_list":  incoming_data["time_list"],
-                          "acceleration_list": incoming_data["acceleration_list"],
                           "altitude_list": incoming_data["altitude_list"],
                           "z_velocity_list": incoming_data["z_velocity_list"],
                           "x_list": incoming_data["x_list"],
                           "y_list": incoming_data["y_list"],
                           "z_list": incoming_data["z_list"],
-                          "sr_list": incoming_data["sr_list"]})
+                          "sr_list": incoming_data["sr_list"],
+                          "mpu_status": incoming_data["mpu_status"],
+                          "bme_status": incoming_data["bme_status"]})
+
       path = self.collected_data_path + "data.csv"
       df.to_csv(path, mode='a', header=False)
       print("data stored, took:", time.time() - t0)
@@ -174,24 +187,31 @@ class Rocket:
     self.last_sr_value = self.sr_list[-1]
     self.last_z_vel_value = self.z_velocity_list[-1]
 
+    print("alt", len(self.altitude_list))
+    print("status", len(self.mpu_status))
+    print("bme_status", len(self.bme_status))
+
     # package sent to storing thread
     package = {"time_list":  self.time_list,
-              "acceleration_list": self.accel_list,
               "altitude_list": self.altitude_list,
               "z_velocity_list": self.z_velocity_list,
               "x_list": self.x_list,
               "y_list": self.y_list,
               "z_list": self.z_list,
-              "sr_list": self.sr_list}
+              "sr_list": self.sr_list,
+              "mpu_status": self.mpu_status,
+              "bme_status": self.bme_status}
+
     self.data_to_store.put(package) 
     self.time_list = []
-    self.accel_list = []
     self.altitude_list = []
     self.z_velocity_list = [self.last_z_vel_value]
     self.sr_list = [self.last_sr_value]
     self.x_list = []
     self.y_list = []
     self.z_list = []
+    self.mpu_status = []
+    self.bme_status = []
   
   def pack_decision_data(self):
     # --------------- #
@@ -213,15 +233,19 @@ class Rocket:
     
     # --------------- #
 
-    self.mpu.get_data(0.03)
+    self.mpu.get_data()
     self.bme.get_data()
 
     self.time_list.append(time.time() - self.system_time)
-    self.accel_list.append(self.mpu.get_total_accel(self.mpu.accelerometer.scaled))
+
     self.x_list.append(self.mpu.accelerometer.scaled[0])
     self.y_list.append(self.mpu.accelerometer.scaled[1])
     self.z_list.append(self.mpu.accelerometer.scaled[2])
+
     self.altitude_list.append(self.bme.running_mean(self.bme.height))
+
+    self.bme_status.append(self.bme.status)
+    self.mpu_status.append(self.mpu.status)
 
   def initialize_csv_file(self):
     # --------------- #
@@ -231,13 +255,14 @@ class Rocket:
     # --------------- #
 
     df = pd.DataFrame({"time_list":  [],
-                      "acceleration_list": [],
                       "altitude_list": [],
                       "z_velocity_list": [],
                       "x_list": [],
                       "y_list": [],
                       "z_list": [],
-                      "sr_list": []})
+                      "sr_list": [],
+                      "mpu_status": [],
+                      "bme_status": []})
 
     path = self.collected_data_path + "data.csv"
     df.to_csv(path)
@@ -245,7 +270,7 @@ class Rocket:
   def wait_start_command(self):
     while not self.button.pushed():
       pass
-    self.buzzer.beep(1)
+    self.buzzer.beep(0.5)
     
   def main(self):
     # --------------- #
@@ -255,7 +280,7 @@ class Rocket:
     # --------------- #
 
     print("System ready!")
-    self.buzzer.beep(1)
+    self.buzzer.beep(0.5)
 
     self.wait_start_command()
     print("System initialized!")

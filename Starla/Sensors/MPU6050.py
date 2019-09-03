@@ -34,6 +34,8 @@ class MPU6050(Sensor):
     self.angle = np.array([0, 0, 0])
     self.z_acceleration = 0
 
+    self.status = True
+
     # Filter
     # rm = running mean
     self.rm_lenght = 100
@@ -43,21 +45,19 @@ class MPU6050(Sensor):
 
   class accelerometer:
     def __init__(self):
-      self.raw = np.array([0, 0, 0])
       self.scaled = np.array([0, 0, 0])
       self.angle = np.array([0, 0, 0])
 
-    def scale(self, a):
-      return a / 16384.0  # Convert to G's
+    def scale(self, raw):
+      return np.divide(raw, 16384.0)  # Convert to G's
 
   class Gyroscope:
     def __init__(self):
-      self.raw = np.array([0, 0, 0])
       self.scaled = np.array([0, 0, 0])
       self.angle = np.array([0, 0, 0])
 
-    def scale(self, a):
-      return a / 131  # Convert to degrees/second
+    def scale(self, raw):
+      return np.divide(raw, 131)  # Convert to degrees/second
 
   def read_byte(self, reg):
     return self.bus.read_byte_data(self.address, reg)
@@ -79,18 +79,17 @@ class MPU6050(Sensor):
     return math.sqrt((a * a) + (b * b))
 
   def get_accelerometer_data(self):
-    self.accelerometer.raw[0] = self.read_word_2c(0x3b) # x
-    self.accelerometer.raw[1] = self.read_word_2c(0x3d) # y
-    self.accelerometer.raw[2] = self.read_word_2c(0x3f) # z
-
-    self.accelerometer.scaled = self.accelerometer.scale(self.accelerometer.raw)
+    try:
+      raw = [self.read_word_2c(0x3b), self.read_word_2c(0x3d), self.read_word_2c(0x3f)] # [x, y, z]
+      
+      return {"scaled": self.accelerometer.scale(raw), "status": True}
+    except Exception as ex:
+      return {"scaled": self.accelerometer.scaled, "status": False}
   
   def get_gyroscope_data(self):
-    self.gyroscope.raw[0] = self.read_word_2c(0x43)
-    self.gyroscope.raw[1] = self.read_word_2c(0x45)
-    self.gyroscope.raw[2] = self.read_word_2c(0x47)
+    raw = [self.read_word_2c(0x43), self.read_word_2c(0x45), self.read_word_2c(0x47)] # [x, y, z]
 
-    self.gyroscope.scaled = self.gyroscope.scale(self.gyroscope.raw)
+    self.gyroscope.scaled = self.gyroscope.scale(raw)
 
   def get_rotation_rad(self, v):
     return [
@@ -112,52 +111,47 @@ class MPU6050(Sensor):
     alpha = 1 / (1 + sampling_rate)
     return alpha * gyroscope_angle + (1 - alpha) * accelerometer_angle
 
-  def get_data(self, sampling_rate):
-    self.get_gyroscope_data()
-    self.get_accelerometer_data()
+  def get_data(self):
+    data = self.get_accelerometer_data()
+    # self.get_gyroscope_data()
 
-    self.accelerometer.angle = self.get_rotation_deg(self.accelerometer.scaled)
-    self.gyroscope.angle = self.angle + self.gyroscope.scaled * sampling_rate
-    self.angle = self.filtered_angle(sampling_rate, self.gyroscope.angle, self.accelerometer.angle)
-    self.angle = self.angle.tolist()
+    self.accelerometer.scaled = data["scaled"]
+    self.status = data["status"]
+
+    # self.accelerometer.angle = self.get_rotation_deg(self.accelerometer.scaled)
+    # self.gyroscope.angle = self.angle + self.gyroscope.scaled * sampling_rate
+    # self.angle = self.filtered_angle(sampling_rate, self.gyroscope.angle, self.accelerometer.angle)
+    # self.angle = self.angle.tolist()
     
-    self.z_acceleration = self.get_total_accel(self.accelerometer.scaled)
-  
-  def get_pitch(self):
-    return self.angle[0]
-
-  def get_yaw(self):
-    return self.angle[1]
-
-  def get_roll(self):
-    return self.angle[2]
+    # self.z_acceleration = self.get_total_accel(self.accelerometer.scaled)
     
-  def show_data(self, sampling_rate):
-    self.get_data(sampling_rate)
+  def show_data(self):
+    self.get_data()
 
-    print("-------------")
-    print("Gyroscope")
-    print("-------------")
+    # print("-------------")
+    # print("Gyroscope")
+    # print("-------------")
 
-    print("Gyroscope_angles: ", self.gyroscope.angle)
+    # print("Gyroscope_angles: ", self.gyroscope.angle)
 
     print("-------------")
     print("Accelerometer")
     print("-------------")
 
     print("Accelerometer_acc: ", self.accelerometer.scaled)
-    print("Accelerometer_angles: ", self.accelerometer.angle)
+    print("Accelerometer_status: ", self.status)
+    # print("Accelerometer_angles: ", self.accelerometer.angle)
 
-    print("-------------")
-    print("Rocket")
-    print("-------------")
+    # print("-------------")
+    # print("Rocket")
+    # print("-------------")
 
-    print("Rocket_angles: ", self.angle)
+    # print("Rocket_angles: ", self.angle)
 
-    print("Z acceleration: ", self.z_acceleration)
+    # print("Z acceleration: ", self.z_acceleration)
 
   def data_pack(self, sampling_rate):
-    self.get_data(sampling_rate)
+    self.get_data()
     return [round(self.angle[0], 1), round(self.angle[1], 1), round(self.angle[2], 1)]
 
   def running_mean(self, data):

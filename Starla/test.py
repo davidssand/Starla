@@ -1,5 +1,3 @@
-a = {"a": 1}
-try:
-  print(a[a])
-except:
-  print("b")
+import pandas as pd
+df = pd.DataFrame({"time_list":  None})
+df.to_csv("data.csv")

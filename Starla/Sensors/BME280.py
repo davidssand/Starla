@@ -51,11 +51,12 @@ class BME280(Sensor):
       return {"humidity": self.humidity, "pressure": self.pressure, "temperature": self.temperature, "height": self.height, "status": False}
 
   def get_data(self):
-    self.humidity = self.read_data()["humidity"]
-    self.pressure = self.read_data()["pressure"]
-    self.temperature = self.read_data()["temperature"]
-    self.height = self.read_data()["height"]
-    self.status = self.read_data()["status"]
+    data = self.read_data()
+    self.humidity = data["humidity"]
+    self.pressure = data["pressure"]
+    self.temperature = data["temperature"]
+    self.height = data["height"]
+    self.status = data["status"]
 
   def show_data(self):
     self.get_data()
@@ -67,6 +68,7 @@ class BME280(Sensor):
     print("Pressure : ", self.pressure, "Pa")
     print("Humidity : ", self.humidity, "%")
     print("height : ", self.height, "m")
+    print("status : ", self.status)
 
   def data_pack(self):
     self.get_data()
