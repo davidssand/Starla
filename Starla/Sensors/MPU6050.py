@@ -38,10 +38,12 @@ class MPU6050(Sensor):
 
     # Filter
     # rm = running mean
-    self.rm_lenght = 100
-    self.rm_sum = 0
     self.rm_input_index = 0
-    self.rm_result = [0 for _ in range(0, self.rm_lenght)]
+    self.rm_lenght = 100
+
+    self.get_data()
+    self.rm_result = [self.accelerometer.scaled[1] for _ in range(0, self.rm_lenght)]
+    self.rm_sum = self.accelerometer.scaled[1] * self.rm_lenght
 
   class accelerometer:
     def __init__(self):
@@ -83,7 +85,7 @@ class MPU6050(Sensor):
       raw = [self.read_word_2c(0x3b), self.read_word_2c(0x3d), self.read_word_2c(0x3f)] # [x, y, z]
       
       return {"scaled": self.accelerometer.scale(raw), "status": True}
-    except Exception as ex:
+    except Exception:
       return {"scaled": self.accelerometer.scaled, "status": False}
   
   def get_gyroscope_data(self):
