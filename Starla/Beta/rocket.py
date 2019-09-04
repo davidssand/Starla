@@ -122,6 +122,7 @@ class Rocket:
 
       #### For tests ####
       time.sleep(3)
+      self.buzzer.beep(0.5)
       # self.camera.stopRecording()
       # self.parachute.deactivate_servo()
       self.data_to_check.queue.clear()
@@ -137,14 +138,6 @@ class Rocket:
     while 1:
       incoming_data = self.data_to_store.get()
       t0 = time.time()
-
-      print("\nstore")
-      print("alt", len(incoming_data["altitude_list"]))
-      print("mpu_status", len(incoming_data["mpu_status"]))
-      print("bme_status", len(incoming_data["bme_status"]))
-      print("alt", len(incoming_data["altitude_list"]))
-      print("mpu_status", len(incoming_data["mpu_status"]))
-      print("bme_status", len(incoming_data["bme_status"]))
 
       df = pd.DataFrame({"time_list":  incoming_data["time_list"],
                           "altitude_list": incoming_data["altitude_list"],
@@ -186,10 +179,6 @@ class Rocket:
 
     self.last_sr_value = self.sr_list[-1]
     self.last_z_vel_value = self.z_velocity_list[-1]
-
-    print("alt", len(self.altitude_list))
-    print("status", len(self.mpu_status))
-    print("bme_status", len(self.bme_status))
 
     # package sent to storing thread
     package = {"time_list":  self.time_list,

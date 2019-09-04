@@ -92,18 +92,21 @@ class Rocket:
 
     # --------------- #
 
-    incoming_data = self.data_to_check.get()[variable]
-    if operator(incoming_data, valid_value):
-      print("---- VALID VALUE DETECTED ----\n")
-      time_zero = time.time()
-      while time.time() - time_zero < validation_time:
-        incoming_data = self.data_to_check.get()[variable]
-        print("Incoming data: {} => ".format(variable), incoming_data)
-        if not operator(incoming_data, valid_value):
-          print("---- DISTURBANCE ----\n")
-          break
-      else:
-        return True
+    incoming_data = self.data_to_check.get().get(variable, None)
+    if incoming_data:
+      if operator(incoming_data, valid_value):
+        print("---- VALID VALUE DETECTED ----\n")
+        time_zero = time.time()
+        while time.time() - time_zero < validation_time:
+          incoming_data = self.data_to_check.get()[variable]
+          print("Incoming data: {} => ".format(variable), incoming_data)
+          if not operator(incoming_data, valid_value):
+            print("---- DISTURBANCE ----\n")
+            break
+        else:
+          return True
+    else:
+      return True
 
   def check_change(self):
     # --------------- #
@@ -122,6 +125,7 @@ class Rocket:
 
       #### For tests ####
       time.sleep(3)
+      self.buzzer.beep(0.5)
       # self.camera.stopRecording()
       # self.parachute.deactivate_servo()
       self.data_to_check.queue.clear()
@@ -137,14 +141,6 @@ class Rocket:
     while 1:
       incoming_data = self.data_to_store.get()
       t0 = time.time()
-
-      print("\nstore")
-      print("alt", len(incoming_data["altitude_list"]))
-      print("mpu_status", len(incoming_data["mpu_status"]))
-      print("bme_status", len(incoming_data["bme_status"]))
-      print("alt", len(incoming_data["altitude_list"]))
-      print("mpu_status", len(incoming_data["mpu_status"]))
-      print("bme_status", len(incoming_data["bme_status"]))
 
       df = pd.DataFrame({"time_list":  incoming_data["time_list"],
                           "altitude_list": incoming_data["altitude_list"],
@@ -186,10 +182,6 @@ class Rocket:
 
     self.last_sr_value = self.sr_list[-1]
     self.last_z_vel_value = self.z_velocity_list[-1]
-
-    print("alt", len(self.altitude_list))
-    print("status", len(self.mpu_status))
-    print("bme_status", len(self.bme_status))
 
     # package sent to storing thread
     package = {"time_list":  self.time_list,
@@ -297,8 +289,8 @@ class Rocket:
     while not self.button.pushed():
       self.populate_data_arrays()
 
-      self.pack_y_acceleration()
       if len(self.time_list) > 1:
+        self.pack_y_acceleration()
         self.pack_velocity()
 
       if (self.time_list[-1] - loop_time) >= self.interval_storage_size:
