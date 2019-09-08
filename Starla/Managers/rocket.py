@@ -30,35 +30,47 @@ class Rocket:
     print("Initializing system...")
 
     self.data_to_store = queue.Queue()
-    self.data_to_check = queue.Queue()
 
     self.flight_datetime = datetime.utcnow().strftime("%m-%d-%Y_%H:%M:%S/")
     self.collected_data_path = "/home/pi/Starla/CollectedData/" + self.flight_datetime
     os.mkdir(self.collected_data_path)
 
+    self.instantiate_parts()
+
+    self.setup_bme()
+    self.setup_mpu()
+
+    # sr -> sampling rate
+    self.last_sr_value = 0
+    self.sr_list = [self.last_sr_value]
+
+    self.setup_running_mean()
+
+    self.iniciate_threads()
+
+    self.interval_storage_size = 3
+    self.time_list = []
+    self.validation_time = 1
+    self.falling = False
+    self.system_time = time.time()
+  # ---------------------------- #
+
+  def instantiate_parts(self):
     # self.camera = Camera()
     # self.parachute = Parachute()
     self.buzzer = Buzzer(12)
     self.button = Button(18)
-
-    self.interval_storage_size = 3
-
-    self.time_list = []
-    self.validation_time = 1
-    self.falling = False
-
-    # MPU
-    self.mpu = MPU6050()
-    self.x_list = []
-    self.y_list = []
-    self.z_list = []
-    self.valid_acceleration = 0
-    self.possible_acceleration_fall = False
-    self.mpu_status = []
-    self.decision_acceleration_time = 0
-
-    #BME
     self.bme = BME280()
+    self.mpu = MPU6050()
+
+  def setup_running_mean(self):
+    # rm = running mean
+    self.rm_lenght = 60
+    self.rm_sum = 0
+    self.rm_input_index = 0
+    self.rm_result = [0 for _ in range(0, self.rm_lenght)]
+
+  def setup_bme(self):
     self.altitude_list = []
     self.last_z_vel_value = 0
     self.z_velocity_list = [self.last_z_vel_value]
@@ -67,22 +79,15 @@ class Rocket:
     self.possible_velocity_fall = False
     self.decision_velocity_time = 0
 
-    # sr -> sampling rate
-    self.last_sr_value = 0
-    self.sr_list = [self.last_sr_value]
+  def setup_mpu(self):
+    self.x_list = []
+    self.y_list = []
+    self.z_list = []
+    self.valid_acceleration = 0
+    self.possible_acceleration_fall = False
+    self.mpu_status = []
+    self.decision_acceleration_time = 0
 
-    # ---------------------------- #
-    # Filter
-    # rm = running mean
-    self.rm_lenght = 60
-    self.rm_sum = 0
-    self.rm_input_index = 0
-    self.rm_result = [0 for _ in range(0, self.rm_lenght)]
-
-    self.iniciate_threads()
-
-    self.system_time = time.time()
-  # ---------------------------- #
 
   def iniciate_threads(self):
     # --------------- #
