@@ -52,10 +52,10 @@ class Rocket:
     self.x_list = []
     self.y_list = []
     self.z_list = []
-    self.valid_angulation = 0
-    self.possible_angulation_fall = False
+    self.valid_acceleration = 0
+    self.possible_acceleration_fall = False
     self.mpu_status = []
-    self.decision_angulation_time = 0
+    self.decision_acceleration_time = 0
 
     #BME
     self.bme = BME280()
@@ -185,7 +185,7 @@ class Rocket:
     current_time = time.time()
 
     if not self.falling:
-      self.change_checker("y_accel", y_accel, self.valid_angulation, self.decision_angulation_time, self.validation_time, self.possible_angulation_fall, current_time)
+      self.change_checker("y_accel", y_accel, self.valid_acceleration, self.decision_acceleration_time, self.validation_time, self.possible_acceleration_fall, current_time)
       self.change_checker("z_vel", vel_filtered, self.valid_velocity, self.decision_velocity_time, self.validation_time, self.possible_velocity_fall, current_time)
 
   def change_checker(self, responsible, data, valid_data, timer, valid_time, flag, current_time):
