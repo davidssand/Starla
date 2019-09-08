@@ -8,12 +8,12 @@ class Parachute:
   # 90º -> 7.5% Duty cycle
   # 180º -> 12.5% Duty cycle
 
-  def __init__(self):
+  def __init__(self, pinout):
     self.gpio = GPIO
     self.gpio.setmode(self.gpio.BOARD)
-    self.gpio.setup(12, self.gpio.OUT)
+    self.gpio.setup(pinout, self.gpio.OUT)
 
-    self.servo = self.gpio.PWM(12, 50)
+    self.servo = self.gpio.PWM(pinout, 50)
 
   def lock_parachute(self):
     self.servo.start(7.5)

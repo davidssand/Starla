@@ -7,14 +7,23 @@ class Camera(picamera.PiCamera):
     self.vflip = 180
     self.hflip = 180
 
-  def startRecording(self):
-    self.start_recording('/home/pi/Starla/CameraData/video.h264')
+  def startRecording(self, path, time):
+    try:
+      self.start_recording(path + "time_" + str(int(time)) + ".h264")
+    except:
+      pass
 
   def stopRecording(self):
-    self.stop_recording()
+    try:
+      self.stop_recording()
+    except:
+      pass
 
-  def take_picture(self):
-    self.capture('/home/pi/Starla/CameraData/imag.jpg')
+  def takePicture(self, path, time):
+    try:
+      self.capture(path + "time_" + str(int(time)) + ".jpg")
+    except Exception as ex:
+      print(ex)
 
 
 

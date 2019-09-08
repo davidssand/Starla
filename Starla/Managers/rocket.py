@@ -56,8 +56,8 @@ class Rocket:
   # ---------------------------- #
 
   def instantiate_parts(self):
-    # self.camera = Camera()
-    # self.parachute = Parachute()
+    self.camera = Camera()
+    self.parachute = Parachute(32)
     self.buzzer = Buzzer(12)
     self.button = Button(18)
     self.bme = BME280()
@@ -202,9 +202,14 @@ class Rocket:
     if ((current_time - timer) > valid_time) and flag:
       print("FALLING. RESPONSABILITY: " + responsible + "\n")
       flag = False
-      self.buzzer.beep(0.5)
-      self.falling = True
-      self.log_fall(responsible)
+      self.fall_actions(responsible)
+      
+  def fall_actions(self, responsible):
+    self.parachute.activate_parachute()
+    self.buzzer.beep(0.5)
+    self.falling = True
+    self.log_fall(responsible)
+    self.camera.takePicture(self.collected_data_path, self.time_list[-1])
 
   def log_fall(self, responsible):
     log_df = pd.DataFrame({"fall_time":  [self.time_list[-1]],
@@ -282,7 +287,7 @@ class Rocket:
     print("System initialized!")
 
     # self.camera.startRecording()
-    # self.parachute.lock_parachute()
+    self.parachute.lock_parachute()
     self.initialize_csv_files()
     
     loop_time = 0
@@ -298,6 +303,6 @@ class Rocket:
 
         self.pack_store_data()
 
+    self.buzzer.beep(1)
     print("System terminated!")
     GPIO.cleanup()
-    self.buzzer.beep(1)
