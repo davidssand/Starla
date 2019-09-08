@@ -98,9 +98,7 @@ class Rocket:
       time_zero = time.time()
       while time.time() - time_zero < validation_time:
         incoming_data = self.data_to_check.get()
-        print("Incoming data: ", incoming_data)
         if not operator(incoming_data, valid_value):
-          print("---- DISTURBANCE ----\n")
           break
       else:
         return True
@@ -115,7 +113,7 @@ class Rocket:
     while 1:
       change = False
       while not change:
-        change = self.change_checker(-0.3, operator.lt, 0.3)
+        change = self.change_checker(-0.5, operator.lt, 1)
       print("---- CHANGE STATE ----\n")
       # self.camera.take_picture()
       # self.parachute.activate_parachute()

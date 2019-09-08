@@ -8,7 +8,7 @@
 import RPi.GPIO as GPIO
 import sys
 sys.path.append("/home/pi/Starla/Beta")
-from rocket_mpu_decision import Rocket
+from rocket import Rocket
 
 try:
   rocket = Rocket()
