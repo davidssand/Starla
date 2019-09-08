@@ -5,12 +5,13 @@
 
 # --- !!! Iniciates Rocket Telemetry !!! --- #
 
+import RPi.GPIO as GPIO
 import sys
 sys.path.append("/home/pi/Starla/Beta")
-from rocket import Rocket
+from rocket_mpu_decision import Rocket
 
 try:
   rocket = Rocket()
   rocket.main()
 except KeyboardInterrupt:
-  rocket.parachute.gpio.cleanup()
+  GPIO.cleanup()

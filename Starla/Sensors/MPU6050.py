@@ -51,7 +51,7 @@ class MPU6050(Sensor):
       self.angle = np.array([0, 0, 0])
 
     def scale(self, raw):
-      return -(np.divide(raw, 16384.0) + np.array([0.7, 1, 0]))  # Convert to G's
+      return -(np.divide(raw, 16384.0))  # Convert to G's  + np.array([0.7, 0, 0])
 
   class Gyroscope:
     def __init__(self):

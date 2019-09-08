@@ -38,23 +38,30 @@ class Rocket:
     self.buzzer = Buzzer(12)
     self.button = Button(18)
 
-    self.mpu = MPU6050()
-    self.bme = BME280()
-
     self.interval_storage_size = 3
 
     self.time_list = []
+    self.validation_time = 0.3
 
+    # MPU
+    self.mpu = MPU6050()
     self.x_list = []
     self.y_list = []
     self.z_list = []
+    self.valid_angulation = 0
+    self.possible_angulation_fall = False
+    self.mpu_status = []
+    self.decision_angulation_time = 0
 
+    #BME
+    self.bme = BME280()
     self.altitude_list = []
     self.last_z_vel_value = 0
     self.z_velocity_list = [self.last_z_vel_value]
-
     self.bme_status = []
-    self.mpu_status = []
+    self.valid_velocity = -0.3
+    self.possible_velocity_fall = False
+    self.decision_velocity_time = 0
 
     # sr -> sampling rate
     self.last_sr_value = 0
@@ -82,53 +89,6 @@ class Rocket:
 
     self.storage_thread = threading.Thread(target=self.store_data, name = "Store data", daemon=True)
     self.storage_thread.start()
-    self.decision_thread = threading.Thread(target=self.check_change, name = "Read and Decide", daemon=True)
-    self.decision_thread.start()
-
-  def change_checker(self, variable, operator, valid_value, validation_time):
-    # --------------- #
-
-    # Check for valid change in input variable
-
-    # --------------- #
-
-    incoming_data = self.data_to_check.get().get(variable, None)
-    if incoming_data:
-      if operator(incoming_data, valid_value):
-        print("---- VALID VALUE DETECTED ----\n")
-        time_zero = time.time()
-        while time.time() - time_zero < validation_time:
-          incoming_data = self.data_to_check.get()[variable]
-          print("Incoming data: {} => ".format(variable), incoming_data)
-          if not operator(incoming_data, valid_value):
-            print("---- DISTURBANCE ----\n")
-            break
-        else:
-          return True
-    else:
-      return True
-
-  def check_change(self):
-    # --------------- #
-
-    # Decides when to open parachute
-
-    # --------------- #
-
-    while 1:
-      change = False
-      while not change:
-        change = self.change_checker("velocity", operator.lt, -0.3, 0.3) or self.change_checker("y_acceleration", operator.lt, 0, 0.3)
-      print("---- CHANGE STATE ----\n")
-      # self.camera.take_picture()
-      # self.parachute.activate_parachute()
-
-      #### For tests ####
-      time.sleep(3)
-      self.buzzer.beep(0.5)
-      # self.camera.stopRecording()
-      # self.parachute.deactivate_servo()
-      self.data_to_check.queue.clear()
 
   def store_data(self):
     # --------------- #
@@ -204,24 +164,44 @@ class Rocket:
     self.z_list = []
     self.mpu_status = []
     self.bme_status = []
-  
-  def pack_y_acceleration(self):
-    data = self.mpu.running_mean(self.y_list[-1])
-    self.data_to_check.put({"y_acceleration": data})
 
-  def pack_velocity(self):
+  def fall_decision(self):
     # --------------- #
 
     # Gathers all data in a package for decision_thread
 
     # --------------- #
+    y_accel = self.mpu.running_mean(self.y_list[-1])
 
     vel = (self.altitude_list[-1] - self.altitude_list[-2])/(self.time_list[-1] - self.time_list[-2])
     vel_filtered = self.running_mean(vel)
     self.z_velocity_list.append(vel_filtered)
-    self.data_to_check.put({"velocity": vel_filtered})
     self.sr_list.append(self.time_list[-1]-self.time_list[-2])
-  
+
+    current_time = time.time()
+
+    if y_accel <= self.valid_angulation and not self.possible_angulation_fall:
+      self.decision_angulation_time = current_time
+      self.possible_angulation_fall = True
+    if y_accel > self.valid_angulation:
+      self.possible_angulation_fall = False
+
+    if vel_filtered <= self.valid_velocity and not self.possible_velocity_fall:
+      self.decision_velocity_time = current_time
+      self.possible_velocity_fall = True
+    if vel_filtered > self.valid_velocity:
+      self.possible_velocity_fall = False
+
+    if ((current_time - self.decision_velocity_time) > self.validation_time) and self.possible_velocity_fall:
+      print("---- FALL VEL ----\n")
+      self.possible_velocity_fall = False
+      self.buzzer.beep(0.5)
+
+    if ((current_time - self.decision_angulation_time) > self.validation_time) and self.possible_angulation_fall:
+      print("---- FALL MPU ----\n")
+      self.possible_angulation_fall = False
+      self.buzzer.beep(0.5)
+
   def populate_data_arrays(self):
     # --------------- #
 
@@ -290,8 +270,7 @@ class Rocket:
       self.populate_data_arrays()
 
       if len(self.time_list) > 1:
-        self.pack_y_acceleration()
-        self.pack_velocity()
+        self.fall_decision()
 
       if (self.time_list[-1] - loop_time) >= self.interval_storage_size:
         # resets loop time for entering in this condition again
