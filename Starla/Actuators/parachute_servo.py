@@ -1,6 +1,6 @@
 import RPi.GPIO as GPIO
 
-class Parachute:
+class ParachuteServo:
   # Activates parachute servo
   # Duty cycle = 50Hz
   # Period = 20ms
@@ -15,11 +15,11 @@ class Parachute:
 
     self.servo = self.gpio.PWM(pinout, 50)
 
-  def lock_parachute(self):
-    self.servo.start(7.5)
+  def lock(self):
+    self.servo.start(9)
 
-  def activate_parachute(self):
+  def activate(self):
     self.servo.ChangeDutyCycle(2.5)
   
-  def deactivate_servo(self):
+  def deactivate(self):
     self.servo.ChangeDutyCycle(0)

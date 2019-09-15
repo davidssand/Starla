@@ -20,7 +20,7 @@ from Sensors.MPU6050 import MPU6050
 from Sensors.BME280 import BME280
 
 from Actuators.camera import Camera
-from Actuators.parachute import Parachute
+from Actuators.parachute_servo import ParachuteServo
 from Actuators.buzzer import Buzzer
 from Actuators.button import Button
 
@@ -57,7 +57,8 @@ class Rocket:
 
   def instantiate_parts(self):
     self.camera = Camera()
-    self.parachute = Parachute(32)
+    self.servo_1 = ParachuteServo(32)
+    self.servo_2 = ParachuteServo(33)
     self.buzzer = Buzzer(12)
     self.button = Button(18)
     self.bme = BME280()
@@ -164,6 +165,9 @@ class Rocket:
               "bme_status": self.bme_status}
 
     self.data_to_store.put(package) 
+    self.reset_arrays()
+
+  def reset_arrays(self):
     self.time_list = []
     self.altitude_list = []
     self.z_velocity_list = [self.last_z_vel_value]
@@ -205,7 +209,7 @@ class Rocket:
       self.fall_actions(responsible)
       
   def fall_actions(self, responsible):
-    self.parachute.activate_parachute()
+    self.open_parachute()
     self.buzzer.beep(0.5)
     self.falling = True
     self.log_fall(responsible)
@@ -272,7 +276,19 @@ class Rocket:
     while not self.button.pushed():
       pass
     self.buzzer.beep(0.5)
-    
+
+  def lock_parachute(self):
+    self.servo_1.lock()
+    self.servo_2.lock()
+
+  def open_parachute(self):
+    self.servo_1.activate()
+    self.servo_2.activate()
+
+  def deactivate_servos(self):
+    self.servo_1.deactivate()
+    self.servo_2.deactivate()
+
   def main(self):
     # --------------- #
 
@@ -287,8 +303,16 @@ class Rocket:
     print("System initialized!")
 
     # self.camera.startRecording()
-    self.parachute.lock_parachute()
+    self.lock_parachute()
     self.initialize_csv_files()
+
+    while time.time() - self.system_time < 2:
+      self.last_sr_value = self.sr_list[-1]
+      self.last_z_vel_value = self.z_velocity_list[-1]
+      self.populate_data_arrays()
+      self.reset_arrays()
+    
+    print("System running")
     
     loop_time = 0
     while not self.button.pushed():
