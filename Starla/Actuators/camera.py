@@ -3,9 +3,12 @@ import time
 
 class Camera(picamera.PiCamera):
   def __init__(self):
-    super().__init__(resolution = (1920, 1080), framerate = 30)
-    self.vflip = 180
-    self.hflip = 180
+    try:
+      super().__init__(resolution = (1920, 1080), framerate = 30)
+      self.vflip = 180
+      self.hflip = 180
+    except Exception as ex:
+      print(ex)
 
   def startRecording(self, path, time):
     try:

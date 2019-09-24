@@ -19,7 +19,7 @@ sys.path.append("/home/pi/Starla")
 from Sensors.MPU6050 import MPU6050
 from Sensors.BME280 import BME280
 
-# from Actuators.camera import Camera
+from Actuators.camera import Camera
 from Actuators.parachute_servo import ParachuteServo
 from Actuators.buzzer import Buzzer
 from Actuators.button import Button
@@ -52,11 +52,11 @@ class Rocket:
     self.time_list = []
     self.validation_time = 1
     self.falling = False
-    self.system_time = time.time()
+    self.system_time = 0
   # ---------------------------- #
 
   def instantiate_parts(self):
-    # self.camera = Camera()
+    self.camera = Camera()
     self.servo_1 = ParachuteServo(32)
     self.servo_2 = ParachuteServo(33)
     self.buzzer = Buzzer(12)
@@ -210,10 +210,10 @@ class Rocket:
       
   def fall_actions(self, responsible):
     self.open_parachute()
-    self.buzzer.beep(0.5)
+    self.buzzer.beep()
     self.falling = True
     self.log_fall(responsible)
-    # self.camera.takePicture(self.collected_data_path, self.time_list[-1])
+    self.camera.takePicture(self.collected_data_path, self.time_list[-1])
 
   def log_fall(self, responsible):
     log_df = pd.DataFrame({"fall_time":  [self.time_list[-1]],
@@ -275,7 +275,7 @@ class Rocket:
   def wait_start_command(self):
     while not self.button.pushed():
       pass
-    self.buzzer.beep(0.5)
+    self.buzzer.beep()
 
   def lock_parachute(self):
     self.servo_1.lock()
@@ -296,23 +296,17 @@ class Rocket:
     
     # --------------- #
 
-    print("System ready!")
-    self.buzzer.beep(0.5)
+    print("System ready")
+    self.buzzer.beep()
 
     self.wait_start_command()
-    print("System initialized!")
+    print("System initialized and running")
+
+    self.system_time = time.time()
 
     # self.camera.startRecording()
     self.lock_parachute()
     self.initialize_csv_files()
-
-    while time.time() - self.system_time < 2:
-      self.last_sr_value = self.sr_list[-1]
-      self.last_z_vel_value = self.z_velocity_list[-1]
-      self.populate_data_arrays()
-      self.reset_arrays()
-    
-    print("System running")
     
     loop_time = 0
     while not self.button.pushed():
@@ -327,6 +321,6 @@ class Rocket:
 
         self.pack_store_data()
 
-    self.buzzer.beep(1)
+    self.buzzer.beep()
     print("System terminated!")
     GPIO.cleanup()

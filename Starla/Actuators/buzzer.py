@@ -20,7 +20,7 @@ class Buzzer:
   def shut_up(self):
     self.pwm.ChangeDutyCycle(0)
 
-  def beep(self, pause):
+  def beep(self, pause = 0.5):
     self.buzz()
     time.sleep(pause)
     self.shut_up()

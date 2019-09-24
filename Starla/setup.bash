@@ -4,7 +4,7 @@ sudo apt-get update &&
 echo "------ apt-get updated successfully" &&
 sudo apt-get install -y python3-pip &&
 echo "------ pip installed successfully" &&
-sudo apt-get install -y python3-dev python3-rpi.gpio
+sudo apt-get install -y python3-dev python3-rpi.gpio &&
 echo "------ python3-dev and python3-rpi.gpio installed successfully" &&
 sudo apt-get install -y python3-numpy &&
 echo "------ numpy installed successfully" &&
