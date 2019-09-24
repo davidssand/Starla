@@ -5,7 +5,7 @@
 
 # Reading rate ≃ 20 ms
 
-import smbus2
+import smbus
 import time
 import bme280
 import sys
@@ -19,7 +19,7 @@ class BME280(Sensor):
 
     self.device = 0x76  # Default device I2C address
 
-    self.bus = smbus2.SMBus(1)  
+    self.bus = smbus.SMBus(1)  
 
     bme280.load_calibration_params(self.bus, self.device)
 

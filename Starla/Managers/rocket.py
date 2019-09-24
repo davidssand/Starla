@@ -19,7 +19,7 @@ sys.path.append("/home/pi/Starla")
 from Sensors.MPU6050 import MPU6050
 from Sensors.BME280 import BME280
 
-from Actuators.camera import Camera
+# from Actuators.camera import Camera
 from Actuators.parachute_servo import ParachuteServo
 from Actuators.buzzer import Buzzer
 from Actuators.button import Button
@@ -31,7 +31,7 @@ class Rocket:
 
     self.data_to_store = queue.Queue()
 
-    self.flight_datetime = datetime.utcnow().strftime("%m-%d-%Y_%H:%M:%S/")
+    self.flight_datetime = datetime.now().strftime("%m-%d-%Y_%H:%M:%S/")
     self.collected_data_path = "/home/pi/Starla/CollectedData/" + self.flight_datetime
     os.mkdir(self.collected_data_path)
 
@@ -56,7 +56,7 @@ class Rocket:
   # ---------------------------- #
 
   def instantiate_parts(self):
-    self.camera = Camera()
+    # self.camera = Camera()
     self.servo_1 = ParachuteServo(32)
     self.servo_2 = ParachuteServo(33)
     self.buzzer = Buzzer(12)
@@ -213,7 +213,7 @@ class Rocket:
     self.buzzer.beep(0.5)
     self.falling = True
     self.log_fall(responsible)
-    self.camera.takePicture(self.collected_data_path, self.time_list[-1])
+    # self.camera.takePicture(self.collected_data_path, self.time_list[-1])
 
   def log_fall(self, responsible):
     log_df = pd.DataFrame({"fall_time":  [self.time_list[-1]],
