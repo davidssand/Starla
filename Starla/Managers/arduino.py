@@ -1,24 +1,27 @@
 #!/usr/bin/env python
-from time import sleep
+import time
 import numpy as np
 from smbus2 import SMBusWrapper
-address = 0x75
-
  
 # Give the I2C device time to settle
-sleep(0.5)
+time.sleep(0.5)
 
-to_char = np.vectorize(chr)
+class Arduino:
+  def __init__(self):
+    self.address = 0x75
+    self.to_char = np.vectorize(chr)
 
-while 1:
-  with SMBusWrapper(1) as bus:
-    try:
-      block = bus.read_i2c_block_data(address, 0, 32)
-      print("".join(to_char(block)))
-    except Exception as ex:
-      print(ex)
-    # data = bus.read_byte(address)
-    # print("byte: ", data)
+  def get_data(self):
+    with SMBusWrapper(1) as bus:
+      try:
+        block = bus.read_i2c_block_data(self.address, 0, 32)
+        print(block)
+        print()
+        print("".join(self.to_char(block)))
+      except Exception as ex:
+        print(ex)
   
-  # Decreasing delay may create more transmission errors.
-  sleep(0.5)
+  def get_data_test(self, t = 0.5):
+    while 1:
+      self.get_data()
+      time.sleep(t)

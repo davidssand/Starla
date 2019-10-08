@@ -23,6 +23,7 @@ from Actuators.camera import Camera
 from Actuators.parachute_servo import ParachuteServo
 from Actuators.buzzer import Buzzer
 from Actuators.button import Button
+from Managers.arduino import Arduino
 
 # ---------------------------- #
 class Rocket:
@@ -63,6 +64,7 @@ class Rocket:
     self.button = Button(18)
     self.bme = BME280()
     self.mpu = MPU6050()
+    self.arduino = Arduino()
 
   def setup_running_mean(self):
     # rm = running mean
@@ -97,8 +99,18 @@ class Rocket:
 
     # --------------- #
 
-    self.storage_thread = threading.Thread(target=self.store_data, name = "Store data", daemon=True)
+    self.storage_thread = threading.Thread(target=self.store_data, name = "Storage thread", daemon=True)
     self.storage_thread.start()
+
+    self.parachute_thread = threading.Thread(target=self.parachute_actions, name = "Parachute thread", daemon=True)
+    self.parachute_thread.start()
+    self.deactivate_servos_event = threading.Event()
+
+  def parachute_actions(self):
+    while(1):
+      self.deactivate_servos_event.wait()
+      time.sleep(1)
+      self.deactivate_servos()
 
   def store_data(self):
     # --------------- #
@@ -191,21 +203,35 @@ class Rocket:
     self.z_velocity_list.append(vel_filtered)
     self.sr_list.append(self.time_list[-1]-self.time_list[-2])
 
-    current_time = time.time()
 
     if not self.falling:
-      self.change_checker("y_accel", y_accel, self.valid_acceleration, self.decision_acceleration_time, self.validation_time, self.possible_acceleration_fall, current_time)
-      self.change_checker("z_vel", vel_filtered, self.valid_velocity, self.decision_velocity_time, self.validation_time, self.possible_velocity_fall, current_time)
+      self.accel_change_checker("y_accel", y_accel)
+      self.vel_change_checker("z_vel", vel_filtered)
 
-  def change_checker(self, responsible, data, valid_data, timer, valid_time, flag, current_time):
-    flag = data <= valid_data
+  def accel_change_checker(self, responsible, y_accel):
+    current_time = time.time()
 
-    if data <= valid_data and not flag:
-      timer = current_time
+    self.possible_acceleration_fall = y_accel <= self.valid_acceleration
 
-    if ((current_time - timer) > valid_time) and flag:
+    if not self.possible_acceleration_fall:
+      self.decision_acceleration_time = current_time
+
+    if ((current_time - self.decision_acceleration_time) > self.validation_time):
       print("FALLING. RESPONSABILITY: " + responsible + "\n")
-      flag = False
+      self.possible_acceleration_fall = False
+      self.fall_actions(responsible)
+
+  def vel_change_checker(self, responsible, vel_filtered):
+    current_time = time.time()
+
+    self.possible_velocity_fall = vel_filtered <= self.valid_velocity
+
+    if not self.possible_velocity_fall:
+      self.decision_velocity_time = current_time
+
+    if ((current_time - self.decision_velocity_time) > self.validation_time):
+      print("FALLING. RESPONSABILITY: " + responsible + "\n")
+      self.possible_velocity_fall = False
       self.fall_actions(responsible)
       
   def fall_actions(self, responsible):
@@ -214,6 +240,7 @@ class Rocket:
     self.falling = True
     self.log_fall(responsible)
     self.camera.takePicture(self.collected_data_path, self.time_list[-1])
+    self.deactivate_servos_event.set()
 
   def log_fall(self, responsible):
     log_df = pd.DataFrame({"fall_time":  [self.time_list[-1]],
@@ -273,9 +300,15 @@ class Rocket:
     log_df.to_csv(path)
 
   def wait_start_command(self):
-    while not self.button.pushed():
-      pass
-    self.buzzer.beep()
+    while 1:
+      if input() == "launch":
+        break
+      else:
+        print("To launch, type 'launch'")
+
+  def setup_parachute_servos(self):
+    self.servo_1.setup()
+    self.servo_2.setup()
 
   def lock_parachute(self):
     self.servo_1.lock()
@@ -296,10 +329,13 @@ class Rocket:
     
     # --------------- #
 
-    print("System ready")
     self.buzzer.beep()
+    self.setup_parachute_servos()
+
+    print("System ready\nType 'launch' to launch")
 
     self.wait_start_command()
+    self.buzzer.beep()
     print("System initialized and running")
 
     self.system_time = time.time()
@@ -321,6 +357,8 @@ class Rocket:
 
         self.pack_store_data()
 
-    self.buzzer.beep()
+    self.buzzer.beep(0.3)
+    time.sleep(0.3)
+    self.buzzer.beep(0.3)
     print("System terminated!")
     GPIO.cleanup()

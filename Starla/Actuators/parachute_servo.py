@@ -15,8 +15,11 @@ class ParachuteServo:
 
     self.servo = self.gpio.PWM(pinout, 50)
 
+  def setup(self):
+    self.servo.start(2.5)
+
   def lock(self):
-    self.servo.start(9)
+    self.servo.ChangeDutyCycle(9)
 
   def activate(self):
     self.servo.ChangeDutyCycle(2.5)

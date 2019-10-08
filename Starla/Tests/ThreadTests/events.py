@@ -5,6 +5,7 @@ import queue
 
 def sleeper():
   while 1:
+    print("=======")
     if not e.is_set(): 
       print("Event set by {}".format(threading.current_thread().name))
       e.set()
@@ -20,8 +21,8 @@ def job():
 e = threading.Event()
 f = threading.Event()
 
-t1 = threading.Thread(target=sleeper, name = "Thread {}".format(1))
-t2 = threading.Thread(target=job, name = "Thread {}".format(2))
+t1 = threading.Thread(target=sleeper, name = "Thread {}".format(1), daemon=True)
+t2 = threading.Thread(target=job, name = "Thread {}".format(2), daemon=True)
 t1.start()
 t2.start()
 t1.join()
