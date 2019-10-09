@@ -17,7 +17,7 @@ class Buzzer:
     self.pwm.start(0)
 
   def buzz(self):
-    self.pwm.ChangeDutyCycle(30)
+    self.pwm.ChangeDutyCycle(100)
 
   def shut_up(self):
     self.pwm.ChangeDutyCycle(0)

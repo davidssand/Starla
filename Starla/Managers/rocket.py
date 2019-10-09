@@ -54,6 +54,7 @@ class Rocket:
     self.validation_time = 1
     self.falling = False
     self.system_time = 0
+    self.initialization_time = 0
   # ---------------------------- #
 
   def instantiate_parts(self):
@@ -78,7 +79,7 @@ class Rocket:
     self.last_z_vel_value = 0
     self.z_velocity_list = [self.last_z_vel_value]
     self.bme_status = []
-    self.valid_velocity = -0.5
+    self.valid_velocity = -1
     self.possible_velocity_fall = False
     self.decision_velocity_time = 0
 
@@ -91,7 +92,6 @@ class Rocket:
     self.mpu_status = []
     self.decision_acceleration_time = 0
 
-
   def iniciate_threads(self):
     # --------------- #
 
@@ -102,15 +102,14 @@ class Rocket:
     self.storage_thread = threading.Thread(target=self.store_data, name = "Storage thread", daemon=True)
     self.storage_thread.start()
 
-    self.parachute_thread = threading.Thread(target=self.parachute_actions, name = "Parachute thread", daemon=True)
-    self.parachute_thread.start()
+    self.falling_thread = threading.Thread(target=self.falling_actions, name = "Parachute thread", daemon=True)
+    self.falling_thread.start()
     self.deactivate_servos_event = threading.Event()
 
-  def parachute_actions(self):
-    while(1):
-      self.deactivate_servos_event.wait()
-      time.sleep(1)
-      self.deactivate_servos()
+  def falling_actions(self):
+    self.deactivate_servos_event.wait()
+    time.sleep(1)
+    self.deactivate_servos()
 
   def store_data(self):
     # --------------- #
@@ -122,7 +121,7 @@ class Rocket:
 
     while 1:
       incoming_data = self.data_to_store.get()
-      t0 = time.time()
+      # t0 = time.time()
 
       df = pd.DataFrame({"time_list":  incoming_data["time_list"],
                           "altitude_list": incoming_data["altitude_list"],
@@ -136,7 +135,8 @@ class Rocket:
 
       path = self.collected_data_path + "data.csv"
       df.to_csv(path, mode='a', header=False)
-      print("data stored, took:", time.time() - t0)
+      # print("data stored, took:", time.time() - t0)
+      self.buzzer.beep(0.1)
 
   def running_mean(self, data):
     # --------------- #
@@ -209,27 +209,23 @@ class Rocket:
       self.vel_change_checker("z_vel", vel_filtered)
 
   def accel_change_checker(self, responsible, y_accel):
-    current_time = time.time()
-
     self.possible_acceleration_fall = y_accel <= self.valid_acceleration
 
     if not self.possible_acceleration_fall:
-      self.decision_acceleration_time = current_time
+      self.decision_acceleration_time = self.system_time
 
-    if ((current_time - self.decision_acceleration_time) > self.validation_time):
+    if ((self.system_time - self.decision_acceleration_time) > self.validation_time):
       print("FALLING. RESPONSABILITY: " + responsible + "\n")
       self.possible_acceleration_fall = False
       self.fall_actions(responsible)
 
   def vel_change_checker(self, responsible, vel_filtered):
-    current_time = time.time()
-
     self.possible_velocity_fall = vel_filtered <= self.valid_velocity
 
     if not self.possible_velocity_fall:
-      self.decision_velocity_time = current_time
+      self.decision_velocity_time = self.system_time
 
-    if ((current_time - self.decision_velocity_time) > self.validation_time):
+    if ((self.system_time - self.decision_velocity_time) > self.validation_time):
       print("FALLING. RESPONSABILITY: " + responsible + "\n")
       self.possible_velocity_fall = False
       self.fall_actions(responsible)
@@ -260,7 +256,7 @@ class Rocket:
     self.mpu.get_data()
     self.bme.get_data()
 
-    self.time_list.append(time.time() - self.system_time)
+    self.time_list.append(self.system_time - self.initialization_time)
 
     self.x_list.append(self.mpu.accelerometer.scaled[0])
     self.y_list.append(self.mpu.accelerometer.scaled[1])
@@ -332,13 +328,14 @@ class Rocket:
     self.buzzer.beep()
     self.setup_parachute_servos()
 
-    print("System ready\nType 'launch' to launch")
+    print("--- System ready ---\nType 'launch' to launch\n")
 
     self.wait_start_command()
     self.buzzer.beep()
     print("System initialized and running")
 
-    self.system_time = time.time()
+    self.initialization_time = time.time()
+    self.decision_velocity_time = self.decision_acceleration_time = self.initialization_time
 
     # self.camera.startRecording()
     self.lock_parachute()
@@ -346,6 +343,7 @@ class Rocket:
     
     loop_time = 0
     while not self.button.pushed():
+      self.system_time = time.time()
       self.populate_data_arrays()
 
       if len(self.time_list) > 1:
