@@ -51,7 +51,9 @@ class Rocket:
 
     self.interval_storage_size = 3
     self.time_list = []
-    self.validation_time = 1
+    self.pressure_list = []
+    self.temperature_list = []
+    self.validation_time = 0.5
     self.falling = False
     self.system_time = 0
     self.initialization_time = 0
@@ -102,14 +104,14 @@ class Rocket:
     self.storage_thread = threading.Thread(target=self.store_data, name = "Storage thread", daemon=True)
     self.storage_thread.start()
 
+    self.detach_servos_event = threading.Event()
     self.falling_thread = threading.Thread(target=self.falling_actions, name = "Parachute thread", daemon=True)
     self.falling_thread.start()
-    self.deactivate_servos_event = threading.Event()
 
   def falling_actions(self):
-    self.deactivate_servos_event.wait()
+    self.detach_servos_event.wait()
     time.sleep(1)
-    self.deactivate_servos()
+    self.detach_servos()
 
   def store_data(self):
     # --------------- #
@@ -124,6 +126,8 @@ class Rocket:
       # t0 = time.time()
 
       df = pd.DataFrame({"time_list":  incoming_data["time_list"],
+                          "pressure_list": incoming_data["pressure_list"],
+                          "temperature_list": incoming_data["temperature_list"],
                           "altitude_list": incoming_data["altitude_list"],
                           "z_velocity_list": incoming_data["z_velocity_list"],
                           "x_list": incoming_data["x_list"],
@@ -137,6 +141,7 @@ class Rocket:
       df.to_csv(path, mode='a', header=False)
       # print("data stored, took:", time.time() - t0)
       self.buzzer.beep(0.1)
+      print("ok")
 
   def running_mean(self, data):
     # --------------- #
@@ -167,6 +172,8 @@ class Rocket:
 
     # package sent to storing thread
     package = {"time_list":  self.time_list,
+              "pressure_list": self.pressure_list,
+              "temperature_list": self.temperature_list,
               "altitude_list": self.altitude_list,
               "z_velocity_list": self.z_velocity_list,
               "x_list": self.x_list,
@@ -181,6 +188,8 @@ class Rocket:
 
   def reset_arrays(self):
     self.time_list = []
+    self.pressure_list = []
+    self.temperature_list = []
     self.altitude_list = []
     self.z_velocity_list = [self.last_z_vel_value]
     self.sr_list = [self.last_sr_value]
@@ -236,7 +245,7 @@ class Rocket:
     self.falling = True
     self.log_fall(responsible)
     self.camera.takePicture(self.collected_data_path, self.time_list[-1])
-    self.deactivate_servos_event.set()
+    self.detach_servos_event.set()
 
   def log_fall(self, responsible):
     log_df = pd.DataFrame({"fall_time":  [self.time_list[-1]],
@@ -255,6 +264,9 @@ class Rocket:
 
     self.mpu.get_data()
     self.bme.get_data()
+
+    self.pressure_list.append(self.bme.pressure)
+    self.temperature_list.append(self.bme.temperature)
 
     self.time_list.append(self.system_time - self.initialization_time)
 
@@ -275,6 +287,8 @@ class Rocket:
     # --------------- #
 
     data_df = pd.DataFrame({"time_list":  [],
+                            "pressure_list": [],
+                            "temperature_list": [],
                             "altitude_list": [],
                             "z_velocity_list": [],
                             "x_list": [],
@@ -314,9 +328,9 @@ class Rocket:
     self.servo_1.activate()
     self.servo_2.activate()
 
-  def deactivate_servos(self):
-    self.servo_1.deactivate()
-    self.servo_2.deactivate()
+  def detach_servos(self):
+    self.servo_1.detach()
+    self.servo_2.detach()
 
   def main(self):
     # --------------- #

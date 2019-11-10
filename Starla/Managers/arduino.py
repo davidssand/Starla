@@ -18,6 +18,7 @@ class Arduino:
         print(block)
         print()
         print("".join(self.to_char(block)))
+        print()
       except Exception as ex:
         print(ex)
   

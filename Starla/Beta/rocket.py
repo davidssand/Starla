@@ -122,7 +122,7 @@ class Rocket:
       time.sleep(3)
       self.buzzer.beep(0.5)
       # self.camera.stopRecording()
-      # self.parachute.deactivate_servo()
+      # self.parachute.detach_servo()
       self.data_to_check.queue.clear()
 
   def store_data(self):
